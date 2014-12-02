@@ -1,0 +1,22 @@
+{
+  "name": "route",
+  "version": "1.0",
+  "author": "Aeluin Chen",
+  "email": "aeluin.chen@moxa.com",
+  "description": "Handle the routing table",
+  "license": "MOXA",
+  "main": "route.py",
+  "argument": "",
+  "priority": 20,
+  "hook": ["ethernet", "cellular"],
+  "dependencies": {},
+  "repository": "",
+  "role": "model",
+  "ttl": 10,
+  "resources": [
+    {
+      "methods": ["get","put"],
+      "resource": "/network/routes"
+    }
+  ]
+}
