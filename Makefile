@@ -1,5 +1,5 @@
 
-FILES = README.md bundle.json route.py __init__.py requirements.txt
+FILES = README.md bundle.json route.py requirements.txt
 DIRS = data ip
 
 all: pylint test
