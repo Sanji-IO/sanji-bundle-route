@@ -1,5 +1,3 @@
-flake8
-paho-mqtt
-coveralls
-sh
+paho-mqtt==1.0
+sh==1.09
 git+https://github.com/Sanji-IO/sanji.git#egg=sanji

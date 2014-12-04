@@ -1,0 +1,18 @@
+Source: sanji-bundle-route
+Priority: extra
+Maintainer: Aeluin Chen <aeluin.chen@moxa.com>
+Build-Depends: debhelper (>= 8.0.0)
+Build-Depends-Indep: python (>= 2.7)
+Standards-Version: 3.9.3
+Section: libs
+Homepage: http://www.moxa.com
+#Vcs-Git: git@github.com:lwindg/sanji-bundle-routes.git
+#Vcs-Browser: https://github.com/lwindg/sanji-bundle-routes
+X-Python-Version: >= 2.5
+
+Package: sanji-bundle-route
+Section: libs
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python2.7, python-pip
+Description: A sanji library for configure the default route.
+ 
