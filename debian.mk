@@ -11,9 +11,10 @@ DIRS        = data ip
 
 all:
 	mkdir -p $(CURDIR)/packages
-	cp -a $(CURDIR)/requirements.txt $(CURDIR)/packages
 	pip install -r $(CURDIR)/packages/requirements.txt --download \
 		$(CURDIR)/packages || true
+	cp -a $(CURDIR)/requirements.txt \
+		$(CURDIR)/packages/bundle-requirements.txt
 
 clean:
 	# do nothing
