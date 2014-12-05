@@ -322,6 +322,16 @@ class TestIPRouteClass(unittest.TestCase):
         self.bundle.put_default(message=message, response=resp, test=True)
 
     @patch.object(IPRoute, 'update_default')
+    def test_put_default_delete_with_empty_iface(self, mock_update_default):
+        # case: delete the default gateway
+        message = Message(
+            {"data": {"interface": ""}, "query": {}, "param": {}})
+
+        def resp(code=200, data=None):
+            self.assertEqual(200, code)
+        self.bundle.put_default(message=message, response=resp, test=True)
+
+    @patch.object(IPRoute, 'update_default')
     def test_put_default_delete_failed(self, mock_update_default):
         mock_update_default.side_effect = ValueError
 

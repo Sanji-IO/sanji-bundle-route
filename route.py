@@ -116,7 +116,7 @@ class IPRoute(Sanji):
                      optional.
         """
         # change the default gateway
-        if "interface" in default:
+        if "interface" in default and default["interface"]:
             ifaces = self.list_interfaces()
             if default["interface"] not in ifaces:
                 raise ValueError("Interface should be UP.")
