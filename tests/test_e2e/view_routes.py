@@ -91,7 +91,35 @@ class View(Sanji):
             print 'PUT %s' % resource
             res = self.publish.put(
                 resource,
-                data={"interface": "eth0", "gateway": "192.168.31.254"})
+                data={"interface": "eth0", "gateway": "192.168.3.254"})
+            if res.code != 200:
+                print 'PUT with interface is supported, code 200 is expected'
+                print res.to_json()
+                self.stop()
+            if 1 == MANUAL_TEST:
+                var = raw_input("Please enter any key to continue...")
+
+            # case 7: test PUT to update interface router
+            sleep(2)
+            resource = '/network/routers'
+            print 'PUT %s' % resource
+            res = self.publish.put(
+                resource,
+                data={"name": "eth1", "gateway": "192.168.4.254"})
+            if res.code != 200:
+                print 'PUT with interface is supported, code 200 is expected'
+                print res.to_json()
+                self.stop()
+            if 1 == MANUAL_TEST:
+                var = raw_input("Please enter any key to continue...")
+
+            # case 8: test PUT to update interface router
+            sleep(2)
+            resource = '/network/routers'
+            print 'PUT %s' % resource
+            res = self.publish.put(
+                resource,
+                data={"name": "eth0", "gateway": "192.168.31.254"})
             if res.code != 200:
                 print 'PUT with interface is supported, code 200 is expected'
                 print res.to_json()

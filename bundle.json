@@ -17,6 +17,10 @@
     {
       "methods": ["get","put"],
       "resource": "/network/routes"
+    },
+    {
+      "methods": ["put"],
+      "resource": "/network/routers"
     }
   ]
 }

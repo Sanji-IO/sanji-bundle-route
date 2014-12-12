@@ -16,6 +16,9 @@
   "resources": [
     {
       "resource": "/network/routes"
+    },
+    {
+      "resource": "/network/routers"
     }
   ]
 }
