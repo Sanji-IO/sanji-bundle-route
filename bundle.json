@@ -15,8 +15,12 @@
   "ttl": 10,
   "resources": [
     {
+      "methods": ["get"],
+      "resource": "/network/routes/interfaces"
+    },
+    {
       "methods": ["get","put"],
-      "resource": "/network/routes"
+      "resource": "/network/routes/default"
     },
     {
       "methods": ["put"],
