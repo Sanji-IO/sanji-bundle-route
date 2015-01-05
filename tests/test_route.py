@@ -69,7 +69,7 @@ class TestIPRouteClass(unittest.TestCase):
             pass
 
         try:
-            os.remove("%s/data/%s.backup.json" % (dirpath, self.name))
+            os.remove("%s/data/%s.json.backup" % (dirpath, self.name))
         except OSError:
             pass
 
