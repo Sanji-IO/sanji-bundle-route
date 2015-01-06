@@ -479,15 +479,13 @@ class TestIPRouteClass(unittest.TestCase):
     """
 
     @patch.object(IPRoute, "update_interface_router")
-    def test__put_router_info(self, mock_update_interface_router):
+    def test__event_router_info(self, mock_update_interface_router):
         # case: update the router information by interface
         message = Message({"data": {}, "query": {}, "param": {}})
         message.data["interface"] = "eth1"
         message.data["gateway"] = "192.168.41.254"
 
-        def resp(code=200, data=None):
-            self.assertEqual(200, code)
-        self.bundle._put_router_info(message=message, response=resp, test=True)
+        self.bundle._event_router_info(message=message, test=True)
 
     @patch.object(IPRoute, "update_interface_router")
     def test__hook_put_ethernet_by_id(self, mock_update_interface_router):

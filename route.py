@@ -258,10 +258,9 @@ class IPRoute(Sanji):
                                   "Update default gateway failed: %s"
                                   % e})
 
-    @Route(methods="put", resource="/network/routers")
-    def _put_router_info(self, message, response):
+    @Route(methods="put", resource="/network/interfaces")
+    def _event_router_info(self, message):
         self.update_interface_router(message.data)
-        return response(data=self.model.db)
 
     @Route(methods="put", resource="/network/ethernets/:id")
     def _hook_put_ethernet_by_id(self, message, response):
