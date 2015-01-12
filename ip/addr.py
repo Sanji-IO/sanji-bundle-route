@@ -3,6 +3,7 @@
 import os
 import sh
 import ipcalc
+import logging
 
 # https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
 
@@ -15,6 +16,9 @@ import ipcalc
 #
 # sh.py
 #   https://pypi.python.org/pypi/sh
+
+
+logger = logging.getLogger()
 
 
 def interfaces():
@@ -36,7 +40,7 @@ def interfaces():
                   (x.startswith("lo") or x.startswith("mon."))]
         return ifaces
     except Exception, e:
-        print "Cannot get interfaces: %s" % e
+        logger.info("Cannot get interfaces: %s" % e)
         raise e
 
 
