@@ -1,4 +1,4 @@
 paho-mqtt==1.0
-sh==1.09
+sh
 ipcalc
 git+https://github.com/Sanji-IO/sanji.git#egg=sanji
