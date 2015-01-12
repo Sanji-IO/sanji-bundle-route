@@ -1,0 +1,24 @@
+{
+  "name": "view-routes",
+  "version": "1.0",
+  "author": "Aeluin Chen",
+  "email": "aeluin.chen@moxa.com",
+  "description": "A test view for routes bundle",
+  "license": "MOXA",
+  "main": "view_routes.py",
+  "argument": "",
+  "priority": 20,
+  "hook": [],
+  "dependencies": {},
+  "repository": "",
+  "role": "view",
+  "ttl": 10,
+  "resources": [
+    {
+      "resource": "/network/routes"
+    },
+    {
+      "resource": "/network/routers"
+    }
+  ]
+}
