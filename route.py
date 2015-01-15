@@ -43,6 +43,8 @@ class IPRoute(Sanji):
         self.cellular = None
         self.interfaces = []
 
+        self.update_default(self.model.db)
+
     def load(self, path):
         """
         Load the configuration. If configuration is not installed yet,
@@ -145,6 +147,12 @@ class IPRoute(Sanji):
             elif self.cellular:
                 raise ValueError("Cellular is connected, the default gateway"
                                  "cannot be changed.")
+
+            # retrieve the default gateway
+            for iface in self.interfaces:
+                if iface["interface"] == default["interface"]:
+                    default = iface
+                    break
 
             try:
                 ip.route.delete("default")
