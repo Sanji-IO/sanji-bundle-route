@@ -56,7 +56,8 @@ def mock_ip_addr_ifaddresses(iface):
 
 class TestIPRouteClass(unittest.TestCase):
 
-    def setUp(self):
+    @patch.object(IPRoute, 'update_default')
+    def setUp(self, mock_update_default):
         self.name = "route"
         self.bundle = IPRoute(connection=Mockup())
 
@@ -73,7 +74,8 @@ class TestIPRouteClass(unittest.TestCase):
         except OSError:
             pass
 
-    def test__init__no_conf(self):
+    @patch.object(IPRoute, 'update_default')
+    def test__init__no_conf(self, mock_update_default):
         # case: no configuration file
         with self.assertRaises(IOError):
             with patch("route.ModelInitiator") as mock_modelinit:
