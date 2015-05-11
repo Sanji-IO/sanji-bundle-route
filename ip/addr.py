@@ -18,7 +18,7 @@ import logging
 #   https://pypi.python.org/pypi/sh
 
 
-logger = logging.getLogger()
+_logger = logging.getLogger("sanji.route.ip.addr")
 
 
 def interfaces():
@@ -40,7 +40,7 @@ def interfaces():
                   (x.startswith("lo") or x.startswith("mon."))]
         return ifaces
     except Exception, e:
-        logger.info("Cannot get interfaces: %s" % e)
+        _logger.info("Cannot get interfaces: %s" % e)
         raise e
 
 

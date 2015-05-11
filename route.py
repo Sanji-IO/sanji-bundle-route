@@ -13,8 +13,7 @@ from voluptuous import Any, Extra, Optional
 import ip
 
 
-# TODO: logger should be defined in sanji package?
-logger = logging.getLogger()
+_logger = logging.getLogger("sanji.route")
 
 
 class IPRoute(Sanji):
@@ -55,7 +54,7 @@ class IPRoute(Sanji):
                 under "data" directory.
         """
         self.model = ModelInitiator("route", path, backup_interval=-1)
-        if None == self.model.db:
+        if self.model.db is None:
             raise IOError("Cannot load any configuration.")
         self.save()
 
@@ -259,8 +258,8 @@ class IPRoute(Sanji):
                     default["gateway"] = default["default"]
                     self.update_default(default)
             except:
-                logger.info("Failed to recover the default gateway.")
-            logger.info("Update default gateway failed: %s" % e)
+                _logger.info("Failed to recover the default gateway.")
+            _logger.info("Update default gateway failed: %s" % e)
             return response(code=404,
                             data={"message":
                                   "Update default gateway failed: %s"
@@ -293,7 +292,7 @@ class IPRoute(Sanji):
 if __name__ == "__main__":
     FORMAT = "%(asctime)s - %(levelname)s - %(lineno)s - %(message)s"
     logging.basicConfig(level=0, format=FORMAT)
-    logger = logging.getLogger("IP Route")
+    _logger = logging.getLogger("sanji.route")
 
     route = IPRoute(connection=Mqtt())
     route.start()
