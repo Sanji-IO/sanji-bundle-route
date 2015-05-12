@@ -92,7 +92,7 @@ class IPRoute(Sanji):
         try:
             ifaces = ip.addr.interfaces()
         except:
-            return None
+            return {}
         """
         except Exception as e:
             raise e
@@ -140,7 +140,7 @@ class IPRoute(Sanji):
         # change the default gateway
         if "interface" in default and default["interface"]:
             ifaces = self.list_interfaces()
-            if default["interface"] not in ifaces:
+            if not ifaces or default["interface"] not in ifaces:
                 raise ValueError("Interface should be UP.")
             # FIXME: how to determine a interface is produced by cellular
             # elif any("ppp" in s for s in ifaces):

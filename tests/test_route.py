@@ -139,7 +139,7 @@ class TestIPRouteClass(unittest.TestCase):
         mock_interfaces.side_effect = IOError
 
         ifaces = self.bundle.list_interfaces()
-        self.assertEqual(None, ifaces)
+        self.assertEqual({}, ifaces)
 
     @patch("route.ip.addr.ifaddresses")
     @patch("route.ip.addr.interfaces")
@@ -385,7 +385,7 @@ class TestIPRouteClass(unittest.TestCase):
 
         def resp(code=404, data=None):
             self.assertEqual(404, code)
-            self.assertEqual(None, data)
+            self.assertEqual({}, data)
         self.bundle._get_interfaces(message=message, response=resp, test=True)
 
     @patch.object(IPRoute, 'list_default')
