@@ -43,7 +43,10 @@ class IPRoute(Sanji):
         self.cellular = None
         self.interfaces = []
 
-        self.update_default(self.model.db)
+        try:
+            self.update_default(self.model.db)
+        except:
+            pass
 
     def load(self, path):
         """
