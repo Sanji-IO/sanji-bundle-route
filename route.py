@@ -204,9 +204,11 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        if iface["interface"] and \
-                iface["interface"] == self.model.db["interface"]:
-            self.update_default(iface)
+        if iface["interface"] == self.model.db["interface"]:
+            try:
+                self.update_default(iface)
+            except:
+                pass
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
