@@ -42,7 +42,10 @@ class IPRoute(Sanji):
         self.cellular = None
         self.interfaces = []
 
-        self.update_default(self.model.db)
+        try:
+            self.update_default(self.model.db)
+        except:
+            pass
 
     def load(self, path):
         """
@@ -91,7 +94,7 @@ class IPRoute(Sanji):
         try:
             ifaces = ip.addr.interfaces()
         except:
-            return None
+            return {}
         """
         except Exception as e:
             raise e
@@ -139,7 +142,7 @@ class IPRoute(Sanji):
         # change the default gateway
         if "interface" in default and default["interface"]:
             ifaces = self.list_interfaces()
-            if default["interface"] not in ifaces:
+            if not ifaces or default["interface"] not in ifaces:
                 raise ValueError("Interface should be UP.")
             # FIXME: how to determine a interface is produced by cellular
             # elif any("ppp" in s for s in ifaces):
@@ -201,7 +204,10 @@ class IPRoute(Sanji):
 
         # check if the default gateway need to be modified
         if iface["interface"] == self.model.db["interface"]:
-            self.update_default(iface)
+            try:
+                self.update_default(iface)
+            except:
+                pass
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
@@ -269,6 +275,7 @@ class IPRoute(Sanji):
     def _event_router_info(self, message):
         self.update_interface_router(message.data)
 
+    '''
     @Route(methods="put", resource="/network/ethernets/:id")
     def _hook_put_ethernet_by_id(self, message, response):
         """
@@ -287,6 +294,7 @@ class IPRoute(Sanji):
         for iface in message.data:
             self.update_interface_router(iface)
         return response(data=self.model.db)
+    '''
 
 
 if __name__ == "__main__":
