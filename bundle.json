@@ -8,7 +8,7 @@
   "main": "route.py",
   "argument": "",
   "priority": 20,
-  "hook": ["ethernet", "cellular"],
+  "hook": [],
   "dependencies": {},
   "repository": "",
   "role": "model",
