@@ -276,6 +276,7 @@ class IPRoute(Sanji):
     def _event_router_info(self, message):
         self.update_interface_router(message.data)
 
+    '''
     @Route(methods="put", resource="/network/ethernets/:id")
     def _hook_put_ethernet_by_id(self, message, response):
         """
@@ -294,6 +295,7 @@ class IPRoute(Sanji):
         for iface in message.data:
             self.update_interface_router(iface)
         return response(data=self.model.db)
+    '''
 
 
 if __name__ == "__main__":
