@@ -1,6 +1,6 @@
 {
   "name": "route",
-  "version": "1.0",
+  "version": "0.9.0",
   "author": "Aeluin Chen",
   "email": "aeluin.chen@moxa.com",
   "description": "Handle the routing table",
