@@ -8,7 +8,7 @@
   "main": "route.py",
   "argument": "",
   "priority": 19,
-  "concurrent": true,
+  "concurrent": false,
   "hook": [],
   "dependencies": {},
   "repository": "",
