@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
+import netifaces
 import logging
 from sanji.core import Sanji
 from sanji.core import Route
@@ -76,7 +77,7 @@ class IPRoute(Sanji):
         Args:
             name: cellular's interface name
         """
-        default = dict()
+        default = {}
         if up:
             self.cellular = name
             default["interface"] = self.cellular
@@ -118,16 +119,15 @@ class IPRoute(Sanji):
         Return:
             default: dict format with "interface" and/or "gateway"
         """
-        rules = ip.route.show()
-        default = dict()
-        for rule in rules:
-            if "default" in rule:
-                break
+        gws = netifaces.gateways()
+        default = {}
+        if gws['default'] != {}:
+            gw = gws['default'][netifaces.AF_INET]
         else:
             return default
 
-        default["interface"] = rule["dev"]
-        default["gateway"] = rule["default"]
+        default["gateway"] = gw[0]
+        default["interface"] = gw[1]
         return default
 
     def update_default(self, default):
@@ -196,7 +196,7 @@ class IPRoute(Sanji):
                     iface["gateway"] = interface["gateway"]
                 break
         else:
-            iface = dict()
+            iface = {}
             iface["interface"] = interface["name"]
             if "gateway" in interface:
                 iface["gateway"] = interface["gateway"]
@@ -246,13 +246,7 @@ class IPRoute(Sanji):
                             data={"message": "Invalid input: %s." % e})
 
         # retrieve the default gateway
-        rules = ip.route.show()
-        default = None
-        for rule in rules:
-            if "default" in rule:
-                default = rule
-                break
-
+        default = self.list_default()
         try:
             self.update_default(message.data)
             return response(data=self.model.db)
@@ -260,8 +254,6 @@ class IPRoute(Sanji):
             # recover the previous default gateway if any
             try:
                 if default:
-                    default["interface"] = default["dev"]
-                    default["gateway"] = default["default"]
                     self.update_default(default)
             except:
                 _logger.info("Failed to recover the default gateway.")

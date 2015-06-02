@@ -1,4 +1,5 @@
 paho-mqtt==1.1
 sh
 ipcalc
+netifaces
 sanji
