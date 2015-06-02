@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import os
 import sh
+import netifaces
 import ipcalc
 import logging
 
@@ -18,7 +18,7 @@ import logging
 #   https://pypi.python.org/pypi/sh
 
 
-_logger = logging.getLogger("sanji.route.ip.addr")
+_logger = logging.getLogger("sanji.ethernet.ip.addr")
 
 
 def interfaces():
@@ -35,7 +35,7 @@ def interfaces():
     # ifaces=$(ip a show | grep -Eo "[0-9]: wlan[0-9]" | sed "s/.*wlan//g")
     # ifaces=$(ip a show | grep -Eo '[0-9]: eth[0-9]' | awk '{print $2}')
     try:
-        ifaces = os.listdir("/sys/class/net")
+        ifaces = netifaces.interfaces()
         ifaces = [x for x in ifaces if not
                   (x.startswith("lo") or x.startswith("mon."))]
         return ifaces
@@ -62,14 +62,12 @@ def ifaddresses(iface):
              "broadcast": ""}]}
 
     Raises:
-        ValueError
+        ValueError: You must specify a valid interface name.
     """
-    info = dict()
-    try:
-        info["mac"] = open("/sys/class/net/%s/address" % iface).read()
-        info["mac"] = info["mac"][:-1]  # remove '\n'
-    except:
-        info["mac"] = None
+    full = netifaces.ifaddresses(iface)
+
+    info = {}
+    info["mac"] = full[netifaces.AF_LINK][0]['addr']
 
     try:
         info["link"] = open("/sys/class/net/%s/operstate" % iface).read()
@@ -81,33 +79,14 @@ def ifaddresses(iface):
     except:
         info["link"] = 0
 
-    #    "ip addr show %s | grep inet | grep -v inet6 | awk '{print $2}'"
-    info["inet"] = list()
-    try:
-        '''
-        output = sh.awk(sh.grep(
-            sh.ip("addr", "show", iface), "inet"),
-            "{print $2}")
-        '''
-        output = sh.ip("addr", "show", iface)
-        try:
-            output = sh.awk(sh.grep(output, "inet"), "{print $2}")
-        except:
-            return info
-    except sh.ErrorReturnCode_1:
-        raise ValueError("Device \"%s\" does not exist." % iface)
-    except:
-        raise ValueError("Unknown error for \"%s\"." % iface)
-
-    # info["inet"] = list()
-    for ip in output.split():
-        net = ipcalc.Network(ip)
-        item = dict()
-        item["ip"] = str(ip.split("/")[0])
-        item["netmask"] = str(net.netmask())
-        if 4 == net.version():
-            item["subnet"] = str(net.network())
-            item["broadcast"] = str(net.broadcast())
+    info["inet"] = []
+    for ip in full[netifaces.AF_INET]:
+        item = {}
+        item["ip"] = ip['addr']
+        item["netmask"] = ip['netmask']
+        item["broadcast"] = ip["broadcast"]
+        net = ipcalc.Network("%s/%s" % (ip['addr'], ip['netmask']))
+        item["subnet"] = str(net.network())
         info["inet"].append(item)
 
     return info

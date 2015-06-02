@@ -173,29 +173,21 @@ class TestIPRouteClass(unittest.TestCase):
         self.assertEqual(1, len(ifaces))
         self.assertIn("eth0", ifaces)
 
-    @patch("route.ip.route.show")
-    def test__list_default(self, mock_route_show):
+    @patch("route.netifaces.gateways")
+    def test__list_default(self, mock_gateways):
         # case: get current default gateway
-        mock_route_show.return_value = [
-            {"default": "192.168.3.254", "dev": "eth0"},
-            {"src": "192.168.4.127",
-             "dev": "eth1",
-             "dest": "192.168.4.0/24"}]
+        mock_gateways.return_value = {
+            'default': {2: ('192.168.3.254', 'eth0')},
+            2: [('192.168.3.254', 'eth0', True)]}
 
         default = self.bundle.list_default()
         self.assertEqual("eth0", default["interface"])
         self.assertEqual("192.168.3.254", default["gateway"])
 
-    @patch("route.ip.route.show")
-    def test__list_default__no_default(self, mock_route_show):
+    @patch("route.netifaces.gateways")
+    def test__list_default__no_default(self, mock_gateways):
         # case: no current default gateway
-        mock_route_show.return_value = [
-            {"src": "192.168.3.127",
-             "dev": "eth0",
-             "dest": "192.168.3.0/24"},
-            {"src": "192.168.4.127",
-             "dev": "eth1",
-             "dest": "192.168.4.0/24"}]
+        mock_gateways.return_value = {'default': {}}
 
         default = self.bundle.list_default()
         self.assertEqual({}, default)
