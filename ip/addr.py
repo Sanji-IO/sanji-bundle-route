@@ -119,7 +119,7 @@ def ifupdown(iface, up):
                          % iface)
 
 
-def ifconfig(iface, dhcpc, ip="", netmask="24", gateway=""):
+def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
     """Set the interface to static IP or dynamic IP (by dhcpclient).
 
     Args:
@@ -161,7 +161,10 @@ def ifconfig(iface, dhcpc, ip="", netmask="24", gateway=""):
         raise ValueError("Unknown error for \"%s\"." % iface)
 
     if dhcpc:
-        sh.dhclient(iface)
+        if script:
+            sh.dhclient("-sf", script, iface)
+        else:
+            sh.dhclient(iface)
     else:
         if ip:
             net = ipcalc.Network("%s/%s" % (ip, netmask))
