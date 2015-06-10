@@ -3,6 +3,7 @@
 import sh
 import netifaces
 import ipcalc
+import copy
 import logging
 
 # https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
@@ -67,7 +68,10 @@ def ifaddresses(iface):
     full = netifaces.ifaddresses(iface)
 
     info = {}
-    info["mac"] = full[netifaces.AF_LINK][0]['addr']
+    try:
+        info["mac"] = full[netifaces.AF_LINK][0]['addr']
+    except:
+        info["mac"] = ""
 
     try:
         info["link"] = open("/sys/class/net/%s/operstate" % iface).read()
@@ -80,13 +84,15 @@ def ifaddresses(iface):
         info["link"] = 0
 
     info["inet"] = []
+    if netifaces.AF_INET not in full:
+        return info
+
     for ip in full[netifaces.AF_INET]:
-        item = {}
-        item["ip"] = ip['addr']
-        item["netmask"] = ip['netmask']
-        item["broadcast"] = ip["broadcast"]
-        net = ipcalc.Network("%s/%s" % (ip['addr'], ip['netmask']))
-        item["subnet"] = str(net.network())
+        item = copy.deepcopy(ip)
+        if "addr" in item:
+            item["ip"] = item.pop("addr")
+            net = ipcalc.Network("%s/%s" % (item["ip"], item["netmask"]))
+            item["subnet"] = str(net.network())
         info["inet"].append(item)
 
     return info
