@@ -86,13 +86,13 @@ class TestIPRouteClass(unittest.TestCase):
     def test__load__current_conf(self):
         # case: load current configuration
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["default"])
+        self.assertEqual("eth0", self.bundle.model.db["interface"])
 
     def test__load__backup_conf(self):
         # case: load backup configuration
         os.remove("%s/data/%s.json" % (dirpath, self.name))
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["default"])
+        self.assertEqual("eth0", self.bundle.model.db["interface"])
 
     def test__load__no_conf(self):
         # case: cannot load any configuration
@@ -198,7 +198,7 @@ class TestIPRouteClass(unittest.TestCase):
         # case: delete the default gateway
         default = dict()
         self.bundle.update_default(default)
-        self.assertNotIn("default", self.bundle.model.db)
+        self.assertNotIn("interface", self.bundle.model.db)
 
     @patch("route.ip.route.delete")
     def test__update_default__delete_failed(self, mock_route_delete):
@@ -208,7 +208,7 @@ class TestIPRouteClass(unittest.TestCase):
         default = dict()
         with self.assertRaises(IOError):
             self.bundle.update_default(default)
-        self.assertIn("default", self.bundle.model.db)
+        self.assertIn("interface", self.bundle.model.db)
 
     @patch("route.ip.route.add")
     @patch("route.ip.route.delete")
@@ -221,7 +221,7 @@ class TestIPRouteClass(unittest.TestCase):
         default = dict()
         default["interface"] = "eth1"
         self.bundle.update_default(default)
-        self.assertIn("eth1", self.bundle.model.db["default"])
+        self.assertIn("eth1", self.bundle.model.db["interface"])
 
     @patch("route.ip.route.add")
     @patch("route.ip.route.delete")
@@ -235,7 +235,7 @@ class TestIPRouteClass(unittest.TestCase):
         default["interface"] = "eth1"
         default["gateway"] = "192.168.4.254"
         self.bundle.update_default(default)
-        self.assertIn("eth1", self.bundle.model.db["default"])
+        self.assertIn("eth1", self.bundle.model.db["interface"])
 
     @patch.object(IPRoute, 'list_interfaces')
     def test__update_default__add_failed_iface_down(
@@ -249,7 +249,7 @@ class TestIPRouteClass(unittest.TestCase):
         default["gateway"] = "192.168.4.254"
         with self.assertRaises(ValueError):
             self.bundle.update_default(default)
-        self.assertIn("default", self.bundle.model.db)
+        self.assertIn("interface", self.bundle.model.db)
 
     @patch.object(IPRoute, 'list_interfaces')
     def test__update_default__add_failed_cellular_connected(
@@ -405,7 +405,7 @@ class TestIPRouteClass(unittest.TestCase):
 
         def resp(code=200, data=None):
             self.assertEqual(200, code)
-            self.assertEqual("eth0", data["default"])
+            self.assertEqual("eth0", data["interface"])
         self.bundle._get_default(message=message, response=resp, test=True)
 
     def test__get_default__empty(self):
