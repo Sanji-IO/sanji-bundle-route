@@ -17,11 +17,15 @@
   "resources": [
     {
       "role": "view",
-      "resource": "/network/interfaces"
+      "resource": "/network/interface"
     },
     {
       "methods": ["get"],
       "resource": "/network/routes/interfaces"
+    },
+    {
+      "methods": ["get","put"],
+      "resource": "/network/routes/db"
     },
     {
       "methods": ["get","put"],

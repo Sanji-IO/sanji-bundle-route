@@ -96,10 +96,6 @@ class IPRoute(Sanji):
             ifaces = ip.addr.interfaces()
         except:
             return {}
-        """
-        except Exception as e:
-            raise e
-        """
 
         # list connected interfaces
         data = []
@@ -263,8 +259,30 @@ class IPRoute(Sanji):
                                   "Update default gateway failed: %s"
                                   % e})
 
-    @Route(methods="put", resource="/network/interfaces")
-    def _event_router_info(self, message):
+    def set_router_db(self, message, response):
+        """
+        Update router database batch or by interface.
+        """
+        if type(message.data) is list:
+            for iface in message.data:
+                self.update_interface_router(iface)
+            return response(data=self.interfaces)
+        elif type(message.data) is dict:
+            self.update_interface_router(message.data)
+            return response(data=message.data)
+        return response(code=400,
+                            data={"message": "Wrong type of router database."})
+
+    @Route(methods="put", resource="/network/routes/db")
+    def _set_router_db(self, message, response):
+        return self.set_router_db(message, response)
+
+    @Route(methods="get", resource="/network/routes/db")
+    def _get_router_db(self, message, response):
+        return response(data=self.interfaces)
+
+    @Route(methods="put", resource="/network/interface")
+    def _event_router_db(self, message):
         self.update_interface_router(message.data)
 
     '''

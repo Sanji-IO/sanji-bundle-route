@@ -8,6 +8,7 @@ import logging
 import unittest
 
 from mock import patch
+from mock import Mock
 from sanji.connection.mockup import Mockup
 from sanji.message import Message
 
@@ -62,7 +63,7 @@ class TestIPRouteClass(unittest.TestCase):
         self.bundle = IPRoute(connection=Mockup())
 
     def tearDown(self):
-        self.bundle.stop()
+        #self.bundle.stop()
         self.bundle = None
         try:
             os.remove("%s/data/%s.json" % (dirpath, self.name))
@@ -95,7 +96,7 @@ class TestIPRouteClass(unittest.TestCase):
 
     def test__load__no_conf(self):
         # case: cannot load any configuration
-        with self.assertRaises(IOError):
+        with self.assertRaises(RuntimeError):
             self.bundle.load("%s/mock" % dirpath)
 
     def test__save(self):
@@ -472,14 +473,30 @@ class TestIPRouteClass(unittest.TestCase):
         pass
     """
 
+    @patch.object(IPRoute, "update_default")
+    def test__set_router_db__add(self, mock_update_default):
+        """
+        set_router_db: add one interface's router info to database
+        """
+        # arrange
+        iface = {"name": "eth0", "gateway": "192.168.3.127"}
+        message = Message({"data": iface})
+        mock_func = Mock(code=200, data=None)
+
+        # act
+        self.bundle.set_router_db(message=message, response=mock_func)
+
+        # assert
+        self.assertEqual(mock_func.call_args_list[0][1]["data"], iface)
+
     @patch.object(IPRoute, "update_interface_router")
-    def test__event_router_info(self, mock_update_interface_router):
+    def test__event_router_db(self, mock_update_interface_router):
         # case: update the router information by interface
         message = Message({"data": {}, "query": {}, "param": {}})
         message.data["interface"] = "eth1"
         message.data["gateway"] = "192.168.41.254"
 
-        self.bundle._event_router_info(message=message, test=True)
+        self.bundle._event_router_db(message=message, test=True)
 
     """
     @patch.object(IPRoute, "update_interface_router")
