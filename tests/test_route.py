@@ -63,7 +63,7 @@ class TestIPRouteClass(unittest.TestCase):
         self.bundle = IPRoute(connection=Mockup())
 
     def tearDown(self):
-        #self.bundle.stop()
+        self.bundle.stop()
         self.bundle = None
         try:
             os.remove("%s/data/%s.json" % (dirpath, self.name))

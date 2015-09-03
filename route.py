@@ -136,6 +136,8 @@ class IPRoute(Sanji):
                      optional.
         """
         # change the default gateway
+        # FIXME: only "gateway" without interface is also available
+        # FIXME: add "secondary" default route rule
         if "interface" in default and default["interface"]:
             ifaces = self.list_interfaces()
             if not ifaces or default["interface"] not in ifaces:
@@ -154,11 +156,15 @@ class IPRoute(Sanji):
 
             try:
                 ip.route.delete("default")
-                if "gateway" in default:
+                if "gateway" in default and "interface" in default:
                     ip.route.add("default", default["interface"],
                                  default["gateway"])
-                else:
+                elif "interface" in default:
                     ip.route.add("default", default["interface"])
+                elif "gateway" in default:
+                    ip.route.add("default", "", default["gateway"])
+                else:
+                    raise ValueError("Invalid default route.")
             except Exception as e:
                 raise e
             self.model.db["interface"] = default["interface"]
@@ -219,6 +225,7 @@ class IPRoute(Sanji):
         Get default gateway.
         """
         default = self.list_default()
+        # FIXME: show real time value instead of settings?
         if self.model.db and "interface" in self.model.db and default and \
                 self.model.db["interface"] == default["interface"]:
             return response(data=default)
@@ -284,27 +291,6 @@ class IPRoute(Sanji):
     @Route(methods="put", resource="/network/interface")
     def _event_router_db(self, message):
         self.update_interface_router(message.data)
-
-    '''
-    @Route(methods="put", resource="/network/ethernets/:id")
-    def _hook_put_ethernet_by_id(self, message, response):
-        """
-        Save the interface name with its gateway and update the default
-        gateway if needed.
-        """
-        self.update_interface_router(message.data)
-        return response(data=self.model.db)
-
-    @Route(methods="put", resource="/network/ethernets")
-    def _hook_put_ethernets(self, message, response):
-        """
-        Save the interface name with its gateway and update the default
-        gateway if needed.
-        """
-        for iface in message.data:
-            self.update_interface_router(iface)
-        return response(data=self.model.db)
-    '''
 
 
 if __name__ == "__main__":
