@@ -84,7 +84,7 @@ class IPRoute(Sanji):
             self.update_default(default)
         else:
             self.cellular = None
-            if name == self.model.db["interface"]:
+            if name == self.model.db["default"]:
                 self.update_default(default)
 
     def list_interfaces(self):
@@ -161,7 +161,7 @@ class IPRoute(Sanji):
                     ip.route.add("default", default["interface"])
             except Exception as e:
                 raise e
-            self.model.db["interface"] = default["interface"]
+            self.model.db["default"] = default["interface"]
 
         # delete the default gateway
         else:
@@ -169,8 +169,8 @@ class IPRoute(Sanji):
                 ip.route.delete("default")
             except Exception as e:
                 raise e
-            if "interface" in self.model.db:
-                self.model.db.pop("interface")
+            if "default" in self.model.db:
+                self.model.db.pop("default")
 
         self.save()
 
@@ -199,7 +199,7 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        if iface["interface"] == self.model.db["interface"]:
+        if iface["interface"] == self.model.db["default"]:
             try:
                 self.update_default(iface)
             except:
@@ -219,8 +219,8 @@ class IPRoute(Sanji):
         Get default gateway.
         """
         default = self.list_default()
-        if self.model.db and "interface" in self.model.db and default and \
-                self.model.db["interface"] == default["interface"]:
+        if self.model.db and "default" in self.model.db and default and \
+                self.model.db["default"] == default["interface"]:
             return response(data=default)
         return response(data=self.model.db)
 
