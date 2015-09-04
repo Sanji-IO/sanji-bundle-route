@@ -108,7 +108,7 @@ class IPRoute(Sanji):
                 data.append(iface)
         return data
 
-    def list_default(self):
+    def get_default(self):
         """
         Retrieve the default gateway
 
@@ -180,7 +180,7 @@ class IPRoute(Sanji):
 
         self.save()
 
-    def update_interface_router(self, interface):
+    def update_router(self, interface):
         """
         Save the interface name with its gateway and update the default
         gateway if needed.
@@ -224,7 +224,7 @@ class IPRoute(Sanji):
         """
         Get default gateway.
         """
-        default = self.list_default()
+        default = self.get_default()
         # FIXME: show real time value instead of settings?
         if self.model.db and "interface" in self.model.db and default and \
                 self.model.db["interface"] == default["interface"]:
@@ -249,7 +249,7 @@ class IPRoute(Sanji):
                             data={"message": "Invalid input: %s." % e})
 
         # retrieve the default gateway
-        default = self.list_default()
+        default = self.get_default()
         try:
             self.update_default(message.data)
             return response(data=self.model.db)
@@ -272,13 +272,13 @@ class IPRoute(Sanji):
         """
         if type(message.data) is list:
             for iface in message.data:
-                self.update_interface_router(iface)
+                self.update_router(iface)
             return response(data=self.interfaces)
         elif type(message.data) is dict:
-            self.update_interface_router(message.data)
+            self.update_router(message.data)
             return response(data=message.data)
         return response(code=400,
-                            data={"message": "Wrong type of router database."})
+                        data={"message": "Wrong type of router database."})
 
     @Route(methods="put", resource="/network/routes/db")
     def _set_router_db(self, message, response):
@@ -290,7 +290,7 @@ class IPRoute(Sanji):
 
     @Route(methods="put", resource="/network/interface")
     def _event_router_db(self, message):
-        self.update_interface_router(message.data)
+        self.update_router(message.data)
 
 
 if __name__ == "__main__":

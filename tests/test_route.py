@@ -96,7 +96,7 @@ class TestIPRouteClass(unittest.TestCase):
 
     def test__load__no_conf(self):
         # case: cannot load any configuration
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(IOError):
             self.bundle.load("%s/mock" % dirpath)
 
     def test__save(self):
@@ -175,22 +175,22 @@ class TestIPRouteClass(unittest.TestCase):
         self.assertIn("eth0", ifaces)
 
     @patch("route.netifaces.gateways")
-    def test__list_default(self, mock_gateways):
+    def test__get_default(self, mock_gateways):
         # case: get current default gateway
         mock_gateways.return_value = {
             'default': {2: ('192.168.3.254', 'eth0')},
             2: [('192.168.3.254', 'eth0', True)]}
 
-        default = self.bundle.list_default()
+        default = self.bundle.get_default()
         self.assertEqual("eth0", default["interface"])
         self.assertEqual("192.168.3.254", default["gateway"])
 
     @patch("route.netifaces.gateways")
-    def test__list_default__no_default(self, mock_gateways):
+    def test__get_default__no_default(self, mock_gateways):
         # case: no current default gateway
         mock_gateways.return_value = {'default': {}}
 
-        default = self.bundle.list_default()
+        default = self.bundle.get_default()
         self.assertEqual({}, default)
 
     @patch("route.ip.route.delete")
@@ -280,7 +280,7 @@ class TestIPRouteClass(unittest.TestCase):
             self.bundle.update_default(default)
 
     @patch.object(IPRoute, 'update_default')
-    def test__update_interface_router__update_interface(
+    def test__update_router__update_interface(
             self, mock_update_default):
         # arrange
         self.bundle.interfaces = [
@@ -289,7 +289,7 @@ class TestIPRouteClass(unittest.TestCase):
         iface = {"name": "eth1", "gateway": "192.168.41.254"}
 
         # act
-        self.bundle.update_interface_router(iface)
+        self.bundle.update_router(iface)
 
         # assert
         self.assertEqual(2, len(self.bundle.interfaces))
@@ -299,7 +299,7 @@ class TestIPRouteClass(unittest.TestCase):
                       self.bundle.interfaces)
 
     @patch.object(IPRoute, 'update_default')
-    def test__update_interface_router__add_interface_with_gateway(
+    def test__update_router__add_interface_with_gateway(
             self, mock_update_default):
         # arrange
         self.bundle.interfaces = [
@@ -307,7 +307,7 @@ class TestIPRouteClass(unittest.TestCase):
         iface = {"name": "eth1", "gateway": "192.168.41.254"}
 
         # act
-        self.bundle.update_interface_router(iface)
+        self.bundle.update_router(iface)
 
         # assert
         self.assertEqual(2, len(self.bundle.interfaces))
@@ -317,7 +317,7 @@ class TestIPRouteClass(unittest.TestCase):
                       self.bundle.interfaces)
 
     @patch.object(IPRoute, 'update_default')
-    def test__update_interface_router__add_interface_without_gateway(
+    def test__update_router__add_interface_without_gateway(
             self, mock_update_default):
         # arrange
         self.bundle.interfaces = [
@@ -325,7 +325,7 @@ class TestIPRouteClass(unittest.TestCase):
         iface = {"name": "eth1"}
 
         # act
-        self.bundle.update_interface_router(iface)
+        self.bundle.update_router(iface)
 
         # assert
         self.assertEqual(2, len(self.bundle.interfaces))
@@ -335,7 +335,7 @@ class TestIPRouteClass(unittest.TestCase):
                       self.bundle.interfaces)
 
     @patch.object(IPRoute, 'update_default')
-    def test__update_interface_router__update_default(
+    def test__update_router__update_default(
             self, mock_update_default):
         # arrange
         self.bundle.interfaces = [
@@ -344,7 +344,7 @@ class TestIPRouteClass(unittest.TestCase):
         iface = {"name": "eth0", "gateway": "192.168.31.254"}
 
         # act
-        self.bundle.update_interface_router(iface)
+        self.bundle.update_router(iface)
 
         # assert
         self.assertEqual(2, len(self.bundle.interfaces))
@@ -381,9 +381,9 @@ class TestIPRouteClass(unittest.TestCase):
             self.assertEqual({}, data)
         self.bundle._get_interfaces(message=message, response=resp, test=True)
 
-    @patch.object(IPRoute, 'list_default')
-    def test__get_default__match(self, mock_list_default):
-        mock_list_default.return_value = {
+    @patch.object(IPRoute, 'get_default')
+    def test___get_default__match(self, mock_get_default):
+        mock_get_default.return_value = {
             "interface": "eth0", "gateway": "192.168.3.254"}
 
         # case: get default gateway info.
@@ -395,9 +395,9 @@ class TestIPRouteClass(unittest.TestCase):
             self.assertEqual("192.168.3.254", data["gateway"])
         self.bundle._get_default(message=message, response=resp, test=True)
 
-    @patch.object(IPRoute, 'list_default')
-    def test__get_default__different(self, mock_list_default):
-        mock_list_default.return_value = {
+    @patch.object(IPRoute, 'get_default')
+    def test___get_default__different(self, mock_get_default):
+        mock_get_default.return_value = {
             "interface": "eth1", "gateway": "192.168.4.254"}
 
         # case: get default gateway info.
@@ -408,7 +408,7 @@ class TestIPRouteClass(unittest.TestCase):
             self.assertEqual("eth0", data["interface"])
         self.bundle._get_default(message=message, response=resp, test=True)
 
-    def test__get_default__empty(self):
+    def test___get_default__empty(self):
         self.bundle.model.db = {}
 
         # case: no default gateway set
@@ -489,8 +489,8 @@ class TestIPRouteClass(unittest.TestCase):
         # assert
         self.assertEqual(mock_func.call_args_list[0][1]["data"], iface)
 
-    @patch.object(IPRoute, "update_interface_router")
-    def test__event_router_db(self, mock_update_interface_router):
+    @patch.object(IPRoute, "update_router")
+    def test__event_router_db(self, mock_update_router):
         # case: update the router information by interface
         message = Message({"data": {}, "query": {}, "param": {}})
         message.data["interface"] = "eth1"
@@ -499,8 +499,8 @@ class TestIPRouteClass(unittest.TestCase):
         self.bundle._event_router_db(message=message, test=True)
 
     """
-    @patch.object(IPRoute, "update_interface_router")
-    def test__hook_put_ethernet_by_id(self, mock_update_interface_router):
+    @patch.object(IPRoute, "update_router")
+    def test__hook_put_ethernet_by_id(self, mock_update_router):
         # case: test if default gateway changed
         message = Message({"data": {}, "query": {}, "param": {}})
         message.data["name"] = "eth1"
@@ -511,8 +511,8 @@ class TestIPRouteClass(unittest.TestCase):
         self.bundle._hook_put_ethernet_by_id(message=message, response=resp,
                                              test=True)
 
-    @patch.object(IPRoute, "update_interface_router")
-    def test__hook_put_ethernets(self, mock_update_interface_router):
+    @patch.object(IPRoute, "update_router")
+    def test__hook_put_ethernets(self, mock_update_router):
         # case: test if default gateway changed
         message = Message({"data": [], "query": {}, "param": {}})
         iface = {"id": 2, "name": "eth1", "gateway": "192.168.4.254"}
