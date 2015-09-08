@@ -38,6 +38,7 @@ class IPRoute(Sanji):
         if self.bundle_env == "debug":  # pragma: no cover
             path_root = "%s/tests" % path_root
 
+        self.interfaces = []
         try:
             self.load(path_root)
         except:
@@ -119,8 +120,8 @@ class IPRoute(Sanji):
                      optional.
         """
         # delete the default gateway
-        if not default or ("interface" not in default and \
-                "gateway" not in default):
+        if not default or ("interface" not in default and
+                           "gateway" not in default):
             try:
                 ip.route.delete("default")
             except Exception as e:
@@ -214,7 +215,7 @@ class IPRoute(Sanji):
             except:
                 pass
 
-    def put(self, default, is_default=True):
+    def set_default(self, default, is_default=True):
         """
         Update default / secondary gateway.
         """
@@ -224,19 +225,32 @@ class IPRoute(Sanji):
             def_type = "secondary"
 
         # save the setting
+        # if no interface but has gateway, do not update anything
         if "interface" in default:
             self.model.db[def_type] = default["interface"]
-        else:
+        elif "gateway" not in default:
             self.model.db[def_type] = ""
         self.save()
+
+        try:
+            if is_default:
+                self.update_default(default)
+        except Exception as e:
+            # try database if failed
+            try:
+                self.try_update_default(self.model.db)
+            except:
+                _logger.info("Failed to recover the default gateway.")
+            error = "Update default gateway failed: %s" % e
+            _logger.error(error)
+            raise IOError(error)
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
         """
         Get available interfaces.
         """
-        data = self.list_interfaces()
-        return response(data=data)
+        return response(data=self.list_interfaces())
 
     @Route(methods="get", resource="/network/routes/default")
     def _get_default(self, message, response):
@@ -255,31 +269,11 @@ class IPRoute(Sanji):
         Update the default gateway, delete default gateway if data is None or
         empty.
         """
-        # TODO: should be removed when schema worked for unittest
         try:
-            IPRoute.put_default_schema(message.data)
+            self.set_default(message.data)
         except Exception as e:
-            return response(code=400,
-                            data={"message": "Invalid input: %s." % e})
-
-        self.put(message.data)
-
-        try:
-            self.update_default(message.data)
-            # FIXME: return should be outside?
-            # return response(data=self.get_default())
-        except Exception as e:
-            # try database if failed
-            _logger.info(e)
-            try:
-                self.try_update_default(self.model.db)
-            except:
-                _logger.info("Failed to recover the default gateway.")
-            _logger.info("Update default gateway failed: %s" % e)
             return response(code=404,
-                            data={"message":
-                                  "Update default gateway failed: %s"
-                                  % e})
+                            data={"message": e})
         return response(data=self.get_default())
 
     @Route(methods="put", resource="/network/routes/secondary")
@@ -288,14 +282,7 @@ class IPRoute(Sanji):
         Update the secondary default gateway, delete default gateway if data
         is None or empty.
         """
-        # TODO: should be removed when schema worked for unittest
-        try:
-            IPRoute.put_default_schema(message.data)
-        except Exception as e:
-            return response(code=400,
-                            data={"message": "Invalid input: %s." % e})
-
-        self.put(message.data, False)
+        self.set_default(message.data, False)
 
     def set_router_db(self, message, response):
         """
