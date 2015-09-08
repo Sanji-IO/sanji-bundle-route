@@ -533,9 +533,9 @@ class TestIPRouteClass(unittest.TestCase):
     @patch.object(IPRoute, "try_update_default")
     @patch.object(IPRoute, "update_default")
     def test__set_default__update_default_failed(
-        self,
-        mock_update_default,
-        mock_try_update_default):
+            self,
+            mock_update_default,
+            mock_try_update_default):
         """
         set_default: update default gateway failed
         """
@@ -559,9 +559,9 @@ class TestIPRouteClass(unittest.TestCase):
     @patch.object(IPRoute, "try_update_default")
     @patch.object(IPRoute, "update_default")
     def test__set_default__update_default_and_recovery_failed(
-        self,
-        mock_update_default,
-        mock_try_update_default):
+            self,
+            mock_update_default,
+            mock_try_update_default):
         """
         set_default: update default gateway failed and recovery failed
         """
