@@ -484,9 +484,9 @@ class TestIPRouteClass(unittest.TestCase):
                       self.bundle.interfaces)
 
     @patch.object(IPRoute, "get_default")
-    @patch.object(IPRoute, 'update_default')
+    @patch.object(IPRoute, 'try_update_default')
     def test__update_router__update_default(
-            self, mock_update_default, mock_get_default):
+            self, mock_try_update_default, mock_get_default):
         """
         update_router: default gateway should also be updated
         """
@@ -509,7 +509,7 @@ class TestIPRouteClass(unittest.TestCase):
                       self.bundle.interfaces)
         self.assertIn({"interface": "eth1", "gateway": "192.168.4.254"},
                       self.bundle.interfaces)
-        mock_update_default.assert_called_once_with(self.bundle.interfaces[0])
+        mock_try_update_default.assert_called_once_with(self.bundle.model.db)
 
     @patch.object(IPRoute, "update_default")
     def test__set_default__default(self, mock_update_default):
