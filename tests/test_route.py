@@ -77,55 +77,49 @@ class TestIPRouteClass(unittest.TestCase):
 
     @patch.object(IPRoute, 'update_default')
     def test__init__no_conf(self, mock_update_default):
-        # case: no configuration file
+        """
+        init: no configuration file
+        """
         with self.assertRaises(IOError):
             with patch("route.ModelInitiator") as mock_modelinit:
                 mock_modelinit.side_effect = IOError
                 self.bundle.init()
 
     def test__load__current_conf(self):
-        # case: load current configuration
+        """
+        load: load current configuration
+        """
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["interface"])
+        self.assertEqual("eth0", self.bundle.model.db["default"])
 
     def test__load__backup_conf(self):
-        # case: load backup configuration
+        """
+        load: load backup configuration
+        """
         os.remove("%s/data/%s.json" % (dirpath, self.name))
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["interface"])
+        self.assertEqual("eth0", self.bundle.model.db["default"])
 
     def test__load__no_conf(self):
-        # case: cannot load any configuration
+        """
+        load: cannot load any configuration
+        """
         with self.assertRaises(IOError):
             self.bundle.load("%s/mock" % dirpath)
 
     def test__save(self):
+        """
+        save
+        """
         # Already tested in init()
         pass
-
-    @patch.object(IPRoute, 'update_default')
-    def test__cellular_connected__up(self, mock_update_default):
-        # case: update default gateway when cellular connected
-        self.bundle.cellular_connected("ppp0")
-        self.assertEqual("ppp0", self.bundle.cellular)
-
-    @patch.object(IPRoute, 'update_default')
-    def test__cellular_connected__down(self, mock_update_default):
-        # case: update default gateway when cellular disconnected
-        self.bundle.cellular_connected("ppp0", False)
-        self.assertEqual(None, self.bundle.cellular)
-
-    @patch.object(IPRoute, 'update_default')
-    def test__cellular_connected__down_delete(self, mock_update_default):
-        # case: update default gateway when cellular disconnected
-        self.bundle.model.db["interface"] = "ppp0"
-        self.bundle.cellular_connected("ppp0", False)
-        self.assertEqual(None, self.bundle.cellular)
 
     @patch("route.ip.addr.ifaddresses")
     @patch("route.ip.addr.interfaces")
     def test__list_interfaces(self, mock_interfaces, mock_ifaddresses):
-        # case: list the available interfaces
+        """
+        list_interfaces: list the available interfaces
+        """
         mock_interfaces.return_value = ["eth0", "eth1", "ppp0"]
         mock_ifaddresses.side_effect = mock_ip_addr_ifaddresses
 
@@ -136,7 +130,9 @@ class TestIPRouteClass(unittest.TestCase):
 
     @patch("route.ip.addr.interfaces")
     def test__list_interfaces__failed_get_ifaces(self, mock_interfaces):
-        # case: failed to list the available interfaces
+        """
+        list_interfaces: failed to list the available interfaces
+        """
         mock_interfaces.side_effect = IOError
 
         ifaces = self.bundle.list_interfaces()
@@ -146,7 +142,9 @@ class TestIPRouteClass(unittest.TestCase):
     @patch("route.ip.addr.interfaces")
     def test__list_interfaces__failed_get_status(self, mock_interfaces,
                                                  mock_ifaddresses):
-        # case: cannot get some interface's status
+        """
+        list_interfaces: cannot get some interface's status
+        """
         def mock_ip_addr_ifaddresses_ppp0_failed(iface):
             if "eth0" == iface:
                 return {"mac": "78:ac:c0:c1:a8:fe",
@@ -176,7 +174,9 @@ class TestIPRouteClass(unittest.TestCase):
 
     @patch("route.netifaces.gateways")
     def test__get_default(self, mock_gateways):
-        # case: get current default gateway
+        """
+        get_default: get current default gateway
+        """
         mock_gateways.return_value = {
             'default': {2: ('192.168.3.254', 'eth0')},
             2: [('192.168.3.254', 'eth0', True)]}
@@ -187,28 +187,105 @@ class TestIPRouteClass(unittest.TestCase):
 
     @patch("route.netifaces.gateways")
     def test__get_default__no_default(self, mock_gateways):
-        # case: no current default gateway
+        """
+        get_default: no current default gateway
+        """
         mock_gateways.return_value = {'default': {}}
 
         default = self.bundle.get_default()
         self.assertEqual({}, default)
 
     @patch("route.ip.route.delete")
-    def test__update_default__delete(self, mock_route_delete):
-        # case: delete the default gateway
-        default = dict()
-        self.bundle.update_default(default)
-        self.assertNotIn("interface", self.bundle.model.db)
+    @patch("route.ip.route.add")
+    def test__update_default(self, mock_ip_route_add, mock_ip_route_del):
+        """
+        update_default: update the default gateway with both interface and 
+                        gateway
+        """
+        default = {}
+        default["interface"] = "eth1"
+        default["gateway"] = "192.168.4.254"
+
+        try:
+            self.bundle.update_default(default)
+        except:
+            self.fail("update_default raised exception unexpectedly!")
 
     @patch("route.ip.route.delete")
-    def test__update_default__delete_failed(self, mock_route_delete):
-        mock_route_delete.side_effect = IOError
+    @patch("route.ip.route.add")
+    def test__update_default__with_iface(self, mock_ip_route_add,
+                                         mock_ip_route_del):
+        """
+        update_default: update the default gateway with interface
+        """
+        default = {}
+        default["interface"] = "eth1"
 
-        # case: failed to delete the default gateway
-        default = dict()
+        try:
+            self.bundle.update_default(default)
+        except:
+            self.fail("update_default raised exception unexpectedly!")
+
+    @patch("route.ip.route.delete")
+    @patch("route.ip.route.add")
+    def test__update_default__with_gateway(self, mock_ip_route_add,
+                                           mock_ip_route_del):
+        """
+        update_default: update the default gateway with gateway
+        """
+        default = {}
+        default["gateway"] = "192.168.4.254"
+
+        try:
+            self.bundle.update_default(default)
+        except:
+            self.fail("update_default raised exception unexpectedly!")
+
+    @patch("route.ip.route.delete")
+    @patch("route.ip.route.add")
+    def test__update_default__failed(self, mock_ip_route_add,
+                                     mock_ip_route_del):
+        """
+        update_default: failed to update the default gateway
+        """
+        mock_ip_route_add.side_effect = IOError
+        default = {}
+        default["gateway"] = "192.168.4.254"
+
         with self.assertRaises(IOError):
             self.bundle.update_default(default)
-        self.assertIn("interface", self.bundle.model.db)
+
+    @patch("route.ip.route.delete")
+    def test__update_default__delete(self, mock_ip_route_del):
+        """
+        update_default: delete the default gateway
+        """
+        default = {}
+
+        try:
+            self.bundle.update_default(default)
+        except:
+            self.fail("update_default raised exception unexpectedly!")
+
+    @patch("route.ip.route.delete")
+    def test__update_default__delete_failed(self, mock_ip_route_del):
+        """
+        update_default: failed delete the default gateway
+        """
+        mock_ip_route_del.side_effect = IOError
+        default = {}
+
+        with self.assertRaises(IOError):
+            self.bundle.update_default(default)
+
+    def test__try_update_default(self):
+        """
+        try_update_default: no interfaces
+        try_update_default: update by default
+        try_update_default: update by secondary
+        try_update_default: delete default gateway
+        """
+        pass
 
     @patch("route.ip.route.add")
     @patch("route.ip.route.delete")
@@ -221,7 +298,7 @@ class TestIPRouteClass(unittest.TestCase):
         default = dict()
         default["interface"] = "eth1"
         self.bundle.update_default(default)
-        self.assertIn("eth1", self.bundle.model.db["interface"])
+        self.assertIn("eth1", self.bundle.model.db["default"])
 
     @patch("route.ip.route.add")
     @patch("route.ip.route.delete")
@@ -235,7 +312,7 @@ class TestIPRouteClass(unittest.TestCase):
         default["interface"] = "eth1"
         default["gateway"] = "192.168.4.254"
         self.bundle.update_default(default)
-        self.assertIn("eth1", self.bundle.model.db["interface"])
+        self.assertIn("eth1", self.bundle.model.db["default"])
 
     @patch.object(IPRoute, 'list_interfaces')
     def test__update_default__add_failed_iface_down(
@@ -249,7 +326,7 @@ class TestIPRouteClass(unittest.TestCase):
         default["gateway"] = "192.168.4.254"
         with self.assertRaises(ValueError):
             self.bundle.update_default(default)
-        self.assertIn("interface", self.bundle.model.db)
+        self.assertIn("default", self.bundle.model.db)
 
     @patch.object(IPRoute, 'list_interfaces')
     def test__update_default__add_failed_cellular_connected(
@@ -400,15 +477,17 @@ class TestIPRouteClass(unittest.TestCase):
         mock_get_default.return_value = {
             "interface": "eth1", "gateway": "192.168.4.254"}
 
-        # case: get default gateway info.
+        # case: get current default gateway info.
         message = Message({"data": {}, "query": {}, "param": {}})
 
         def resp(code=200, data=None):
             self.assertEqual(200, code)
-            self.assertEqual("eth0", data["interface"])
+            self.assertEqual("eth1", data["interface"])
         self.bundle._get_default(message=message, response=resp, test=True)
 
-    def test___get_default__empty(self):
+    @patch.object(IPRoute, 'get_default')
+    def test___get_default__empty(self, mock_get_default):
+        mock_get_default.return_value = {}
         self.bundle.model.db = {}
 
         # case: no default gateway set

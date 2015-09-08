@@ -4,6 +4,7 @@
 import os
 import netifaces
 import logging
+from time import sleep
 from sanji.core import Sanji
 from sanji.core import Route
 from sanji.connection.mqtt import Mqtt
@@ -43,16 +44,9 @@ class IPRoute(Sanji):
             self.stop()
             raise IOError("Cannot load any configuration.")
 
-        """ update inside run()
-        try:
-            self.update_default(self.model.db)
-        except:
-            pass
-        """
-
     def run(self):
         while True:
-            self.update_default(self.model.db)
+            self.try_update_default(self.model.db)
             sleep(self.update_interval)
 
     def load(self, path):
@@ -124,20 +118,18 @@ class IPRoute(Sanji):
             default: dict format with "interface" required and "gateway"
                      optional.
         """
+        # delete the default gateway
+        if not default or ("interface" not in default and \
+                "gateway" not in default):
+            try:
+                ip.route.delete("default")
+            except Exception as e:
+                raise e
+
         # change the default gateway
         # FIXME: only "gateway" without interface is also available
         # FIXME: add "secondary" default route rule
-        if "interface" in default and default["interface"]:
-            ifaces = self.list_interfaces()
-            if not ifaces or default["interface"] not in ifaces:
-                raise ValueError("Interface should be UP.")
-
-            # retrieve the default gateway
-            for iface in self.interfaces:
-                if iface["interface"] == default["interface"]:
-                    default = iface
-                    break
-
+        else:
             try:
                 ip.route.delete("default")
                 if "gateway" in default and "interface" in default:
@@ -151,18 +143,45 @@ class IPRoute(Sanji):
                     raise ValueError("Invalid default route.")
             except Exception as e:
                 raise e
-            self.model.db["interface"] = default["interface"]
 
-        # delete the default gateway
+    def try_update_default(self, routes):
+        """
+        Try to update the default gateway.
+
+        Args:
+            routes: dict format including default gateway interface and
+                    secondary default gateway interface.
+                    For example:
+                    {
+                        "default": "wwan0",
+                        "secondary": "eth0"
+                    }
+        """
+        ifaces = self.list_interfaces()
+        if not ifaces:
+            raise ValueError("Interfaces should be UP.")
+
+        default = {}
+        if routes["default"] in ifaces:
+            default["interface"] = routes["default"]
+        elif routes["secondary"] in ifaces:
+            default["interface"] = routes["secondary"]
         else:
-            try:
-                ip.route.delete("default")
-            except Exception as e:
-                raise e
-            if "interface" in self.model.db:
-                self.model.db.pop("interface")
+            return self.update_default({})
 
-        self.save()
+        # find gateway by interface
+        for iface in self.interfaces:
+            if iface["interface"] == default["interface"]:
+                default = iface
+                break
+
+        current = self.get_default()
+        try:
+            if current["interface"] != default["interface"] or \
+                    current["gateway"] != default["gateway"]:
+                self.update_default(default)
+        except:
+            self.update_default(default)
 
     def update_router(self, interface):
         """
@@ -189,11 +208,27 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        if iface["interface"] == self.model.db["interface"]:
+        if iface["interface"] == self.model.db["default"]:
             try:
-                self.update_default(iface)
+                self.try_update_default(self.model.db)
             except:
                 pass
+
+    def put(self, default, is_default=True):
+        """
+        Update default / secondary gateway.
+        """
+        if is_default:
+            def_type = "default"
+        else:
+            def_type = "secondary"
+
+        # save the setting
+        if "interface" in default:
+            self.model.db[def_type] = default["interface"]
+        else:
+            self.model.db[def_type] = ""
+        self.save()
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
@@ -227,16 +262,17 @@ class IPRoute(Sanji):
             return response(code=400,
                             data={"message": "Invalid input: %s." % e})
 
-        # retrieve the default gateway
-        default = self.get_default()
+        self.put(message.data)
+
         try:
             self.update_default(message.data)
-            return response(data=self.model.db)
+            # FIXME: return should be outside?
+            # return response(data=self.get_default())
         except Exception as e:
-            # recover the previous default gateway if any
+            # try database if failed
+            _logger.info(e)
             try:
-                if default:
-                    self.update_default(default)
+                self.try_update_default(self.model.db)
             except:
                 _logger.info("Failed to recover the default gateway.")
             _logger.info("Update default gateway failed: %s" % e)
@@ -244,6 +280,22 @@ class IPRoute(Sanji):
                             data={"message":
                                   "Update default gateway failed: %s"
                                   % e})
+        return response(data=self.get_default())
+
+    @Route(methods="put", resource="/network/routes/secondary")
+    def _put_secondary(self, message, response, schema=put_default_schema):
+        """
+        Update the secondary default gateway, delete default gateway if data
+        is None or empty.
+        """
+        # TODO: should be removed when schema worked for unittest
+        try:
+            IPRoute.put_default_schema(message.data)
+        except Exception as e:
+            return response(code=400,
+                            data={"message": "Invalid input: %s." % e})
+
+        self.put(message.data, False)
 
     def set_router_db(self, message, response):
         """
