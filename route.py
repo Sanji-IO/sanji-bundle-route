@@ -24,6 +24,9 @@ class IPRoute(Sanji):
     Attributes:
         model: database with json format.
     """
+
+    update_interval = 60
+
     def init(self, *args, **kwargs):
         try:  # pragma: no cover
             self.bundle_env = kwargs["bundle_env"]
@@ -40,13 +43,17 @@ class IPRoute(Sanji):
             self.stop()
             raise IOError("Cannot load any configuration.")
 
-        self.cellular = None
-        self.interfaces = []
-
+        """ update inside run()
         try:
             self.update_default(self.model.db)
         except:
             pass
+        """
+
+    def run(self):
+        while True:
+            self.update_default(self.model.db)
+            sleep(self.update_interval)
 
     def load(self, path):
         """
@@ -68,24 +75,6 @@ class IPRoute(Sanji):
         """
         self.model.save_db()
         self.model.backup_db()
-
-    def cellular_connected(self, name, up=True):
-        """
-        If cellular is connected, the default gateway should be set to
-        cellular interface.
-
-        Args:
-            name: cellular's interface name
-        """
-        default = {}
-        if up:
-            self.cellular = name
-            default["interface"] = self.cellular
-            self.update_default(default)
-        else:
-            self.cellular = None
-            if name == self.model.db["interface"]:
-                self.update_default(default)
 
     def list_interfaces(self):
         """
@@ -142,11 +131,6 @@ class IPRoute(Sanji):
             ifaces = self.list_interfaces()
             if not ifaces or default["interface"] not in ifaces:
                 raise ValueError("Interface should be UP.")
-            # FIXME: how to determine a interface is produced by cellular
-            # elif any("ppp" in s for s in ifaces):
-            elif self.cellular:
-                raise ValueError("Cellular is connected, the default gateway"
-                                 "cannot be changed.")
 
             # retrieve the default gateway
             for iface in self.interfaces:
@@ -224,12 +208,7 @@ class IPRoute(Sanji):
         """
         Get default gateway.
         """
-        default = self.get_default()
-        # FIXME: show real time value instead of settings?
-        if self.model.db and "interface" in self.model.db and default and \
-                self.model.db["interface"] == default["interface"]:
-            return response(data=default)
-        return response(data=self.model.db)
+        return response(data=self.get_default())
 
     put_default_schema = Schema({
         Optional("interface"): Any(str, unicode),
