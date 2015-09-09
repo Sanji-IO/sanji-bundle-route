@@ -47,7 +47,10 @@ class IPRoute(Sanji):
 
     def run(self):
         while True:
-            self.try_update_default(self.model.db)
+            try:
+                self.try_update_default(self.model.db)
+            except:
+                pass
             sleep(self.update_interval)
 
     def load(self, path):
@@ -110,6 +113,17 @@ class IPRoute(Sanji):
         default["interface"] = gw[1]
         return default
 
+    def update_dns(self, interface):
+        """
+        Update DNS according to default gateway's interface.
+
+        Args: 
+            default: interface name
+        """
+        res = self.publish.put("/network/dns", data={"interface": interface})
+        if res.code != 200:
+            raise RuntimeWarning(res.data["message"])
+
     def update_default(self, default):
         """
         Update default gateway. If updated failed, should recover to previous
@@ -142,6 +156,10 @@ class IPRoute(Sanji):
                     ip.route.add("default", "", default["gateway"])
                 else:
                     raise ValueError("Invalid default route.")
+
+                # update DNS
+                if "interface" in default:
+                    self.update_dns(default["interface"])
             except Exception as e:
                 raise e
 

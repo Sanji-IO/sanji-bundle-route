@@ -195,9 +195,11 @@ class TestIPRouteClass(unittest.TestCase):
         default = self.bundle.get_default()
         self.assertEqual({}, default)
 
+    @patch.object(IPRoute, "update_dns")
     @patch("route.ip.route.delete")
     @patch("route.ip.route.add")
-    def test__update_default(self, mock_ip_route_add, mock_ip_route_del):
+    def test__update_default(self, mock_ip_route_add, mock_ip_route_del,
+                             mock_update_dns):
         """
         update_default: update the default gateway with both interface and
                         gateway
@@ -211,10 +213,11 @@ class TestIPRouteClass(unittest.TestCase):
         except:
             self.fail("update_default raised exception unexpectedly!")
 
+    @patch.object(IPRoute, "update_dns")
     @patch("route.ip.route.delete")
     @patch("route.ip.route.add")
     def test__update_default__with_iface(self, mock_ip_route_add,
-                                         mock_ip_route_del):
+                                         mock_ip_route_del, mock_update_dns):
         """
         update_default: update the default gateway with interface
         """
