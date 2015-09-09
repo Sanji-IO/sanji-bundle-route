@@ -12,7 +12,7 @@
 DEB_PACKAGE := $(strip $(shell dh_listpackages -i 2>/dev/null || dh_listpackages -i))
 DEB_DESTDIR := $(CURDIR)/debian/$(DEB_PACKAGE)
 
-DEB_PYPDIR  := $(DEB_DESTDIR)/tmp/packages
+DEB_PYPDIR  := $(DEB_DESTDIR)/tmp/$(DEB_PACKAGE)-packages
 
 
 %:
