@@ -300,7 +300,12 @@ class IPRoute(Sanji):
         Update the secondary default gateway, delete default gateway if data
         is None or empty.
         """
-        self.set_default(message.data, False)
+        try:
+            self.set_default(message.data, False)
+        except Exception as e:
+            return response(code=404,
+                            data={"message": e})
+        return response(data=message.data)
 
     def set_router_db(self, message, response):
         """
