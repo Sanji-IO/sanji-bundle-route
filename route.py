@@ -117,7 +117,7 @@ class IPRoute(Sanji):
         """
         Update DNS according to default gateway's interface.
 
-        Args: 
+        Args:
             default: interface name
         """
         res = self.publish.put("/network/dns", data={"interface": interface})
