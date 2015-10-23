@@ -104,7 +104,7 @@ class IPRoute(Sanji):
         """
         gws = netifaces.gateways()
         default = {}
-        if gws['default'] != {}:
+        if gws['default'] != {} and netifaces.AF_INET in gws['default']:
             gw = gws['default'][netifaces.AF_INET]
         else:
             return default

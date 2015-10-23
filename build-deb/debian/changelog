@@ -1,3 +1,9 @@
+sanji-bundle-route (0.9.5-1) unstable; urgency=low
+
+  * Bugfix: default gateway cannot be updated at some scenario.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 23 Oct 2015 10:20:25 +0800
+
 sanji-bundle-route (0.9.4-2) unstable; urgency=low
 
   * Update building policy for debian package.
