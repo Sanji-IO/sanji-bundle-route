@@ -111,7 +111,9 @@ def ifupdown(iface, up):
     if not up:
         try:
             output = sh.awk(
-                sh.grep(sh.grep(sh.ps("ax"), iface), "dhclient"),
+                sh.grep(
+                    sh.grep(sh.ps("ax"), iface, _timeout=5),
+                    "dhclient", _timeout=5),
                 "{print $1}")
             dhclients = output().split()
             for dhclient in dhclients:
@@ -150,7 +152,9 @@ def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
     # Disable the dhcp client and flush interface
     try:
         dhclients = sh.awk(
-            sh.grep(sh.grep(sh.ps("ax"), iface), "dhclient"),
+            sh.grep(
+                sh.grep(sh.ps("ax"), iface, _timeout=5),
+                "dhclient", _timeout=5),
             "{print $1}")
         dhclients = dhclients.split()
         if 1 == len(dhclients):
