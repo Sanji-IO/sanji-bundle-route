@@ -1,3 +1,9 @@
+sanji-bundle-route (0.10.1-1) unstable; urgency=low
+
+  * DNS API using "source" instead of "interface".
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 03 Dec 2015 17:47:46 +0800
+
 sanji-bundle-route (0.9.6-1) unstable; urgency=low
 
   * Add timeout to `grep` for preventing input without EOF.

@@ -120,7 +120,7 @@ class IPRoute(Sanji):
         Args:
             default: interface name
         """
-        res = self.publish.put("/network/dns", data={"interface": interface})
+        res = self.publish.put("/network/dns", data={"source": interface})
         if res.code != 200:
             raise RuntimeWarning(res.data["message"])
 
