@@ -216,8 +216,8 @@ class TestIPRouteClass(unittest.TestCase):
     @patch.object(IPRoute, "update_wan_info")
     @patch("route.ip.route.delete")
     @patch("route.ip.route.add")
-    def test__update_default__with_iface(self, mock_ip_route_add,
-                                         mock_ip_route_del, mock_update_wan_info):
+    def test__update_default__with_iface(
+            self, mock_ip_route_add, mock_ip_route_del, mock_update_wan_info):
         """
         update_default: update the default gateway with interface
         """
