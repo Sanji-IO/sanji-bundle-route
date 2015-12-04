@@ -1,3 +1,9 @@
+sanji-bundle-route (0.10.2-1) unstable; urgency=low
+
+  * Publish "WAN" event while default route changed.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 04 Dec 2015 18:13:41 +0800
+
 sanji-bundle-route (0.10.1-1) unstable; urgency=low
 
   * DNS API using "source" instead of "interface".
