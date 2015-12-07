@@ -113,13 +113,16 @@ class IPRoute(Sanji):
         default["interface"] = gw[1]
         return default
 
-    def update_dns(self, interface):
+    def update_wan_info(self, interface):
         """
-        Update DNS according to default gateway's interface.
+        Update WAN interface to default gateway's interface.
 
         Args:
             default: interface name
         """
+        self.publish.event.put("/network/wan", data={"interface": interface})
+
+        # TODO: modify DNS to listen `/network/wan` instead
         res = self.publish.put("/network/dns", data={"source": interface})
         if res.code != 200:
             raise RuntimeWarning(res.data["message"])
@@ -159,7 +162,7 @@ class IPRoute(Sanji):
 
                 # update DNS
                 if "interface" in default:
-                    self.update_dns(default["interface"])
+                    self.update_wan_info(default["interface"])
             except Exception as e:
                 raise e
 
