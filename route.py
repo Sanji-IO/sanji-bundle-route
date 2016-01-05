@@ -4,6 +4,7 @@
 import os
 import netifaces
 import logging
+from threading import Lock
 from time import sleep
 from sanji.core import Sanji
 from sanji.core import Route
@@ -16,6 +17,7 @@ import ip
 
 
 _logger = logging.getLogger("sanji.route")
+_update_default_lock = Lock()
 
 
 class IPRoute(Sanji):
@@ -47,11 +49,11 @@ class IPRoute(Sanji):
 
     def run(self):
         while True:
+            sleep(self.update_interval)
             try:
                 self.try_update_default(self.model.db)
             except:
                 pass
-            sleep(self.update_interval)
 
     def load(self, path):
         """
@@ -166,7 +168,7 @@ class IPRoute(Sanji):
             except Exception as e:
                 raise e
 
-    def try_update_default(self, routes):
+    def _try_update_default(self, routes):
         """
         Try to update the default gateway.
 
@@ -189,7 +191,8 @@ class IPRoute(Sanji):
         elif routes["secondary"] in ifaces:
             default["interface"] = routes["secondary"]
         else:
-            return self.update_default({})
+            self.update_default({})
+            return
 
         # find gateway by interface
         for iface in self.interfaces:
@@ -199,11 +202,18 @@ class IPRoute(Sanji):
 
         current = self.get_default()
         try:
-            if current["interface"] != default["interface"] or \
-                    current["gateway"] != default["gateway"]:
+            if current != default:
                 self.update_default(default)
-        except:
-            self.update_default(default)
+        except Exception as e:
+            _logger.debug(e)
+            try:
+                self.update_default(default)
+            except:
+                pass
+
+    def try_update_default(self, routes):
+        with _update_default_lock:
+            self._try_update_default(routes)
 
     def update_router(self, interface):
         """
@@ -230,11 +240,10 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        if iface["interface"] == self.model.db["default"]:
-            try:
-                self.try_update_default(self.model.db)
-            except:
-                pass
+        try:
+            self.try_update_default(self.model.db)
+        except:
+            pass
 
     def set_default(self, default, is_default=True):
         """

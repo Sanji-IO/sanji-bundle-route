@@ -1,6 +1,6 @@
 {
   "name": "route",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "author": "Aeluin Chen",
   "email": "aeluin.chen@moxa.com",
   "description": "Handle the routing table",
@@ -18,6 +18,10 @@
     {
       "role": "view",
       "resource": "/network/interface"
+    },
+    {
+      "role": "view",
+      "resource": "/network/dns"
     },
     {
       "methods": ["get"],
