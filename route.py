@@ -206,10 +206,6 @@ class IPRoute(Sanji):
                 self.update_default(default)
         except Exception as e:
             _logger.debug(e)
-            try:
-                self.update_default(default)
-            except:
-                pass
 
     def try_update_default(self, routes):
         with _update_default_lock:
