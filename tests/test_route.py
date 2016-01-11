@@ -289,7 +289,7 @@ class TestIPRouteClass(unittest.TestCase):
         """
         mock_list_interfaces.return_value = []
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(IPRouteError):
             self.bundle._try_update_default(self.bundle.model.db)
 
     @patch.object(IPRoute, "update_default")
@@ -579,7 +579,7 @@ class TestIPRouteClass(unittest.TestCase):
         }
 
         # act
-        with self.assertRaises(IPRouteError):
+        with self.assertRaises(IOError):
             self.bundle.set_default(default)
 
         # assert
