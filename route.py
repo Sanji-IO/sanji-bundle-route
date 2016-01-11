@@ -214,6 +214,7 @@ class IPRoute(Sanji):
                 self._try_update_default(routes)
             except Exception as e:
                 _logger.debug(e)
+                raise IPRouteError(e)
 
     def update_router(self, interface):
         """
