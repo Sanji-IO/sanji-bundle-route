@@ -1,3 +1,10 @@
+sanji-bundle-route (0.10.3-1) unstable; urgency=low
+
+  * Bugfix: wait until timeout when update interface of DNS
+  * Add lock while update the default gateway
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 08 Jan 2016 11:01:05 +0800
+
 sanji-bundle-route (0.10.2-1) unstable; urgency=low
 
   * Publish "WAN" event while default route changed.

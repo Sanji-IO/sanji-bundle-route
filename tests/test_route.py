@@ -15,6 +15,7 @@ from sanji.message import Message
 try:
     sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../')
     from route import IPRoute
+    from route import IPRouteError
 except ImportError as e:
     print os.path.dirname(os.path.realpath(__file__)) + '/../'
     print sys.path
@@ -288,8 +289,8 @@ class TestIPRouteClass(unittest.TestCase):
         """
         mock_list_interfaces.return_value = []
 
-        with self.assertRaises(ValueError):
-            self.bundle.try_update_default(self.bundle.model.db)
+        with self.assertRaises(IPRouteError):
+            self.bundle._try_update_default(self.bundle.model.db)
 
     @patch.object(IPRoute, "update_default")
     @patch.object(IPRoute, "get_default")
@@ -323,7 +324,7 @@ class TestIPRouteClass(unittest.TestCase):
         routes["default"] = "eth0"
         routes["secondary"] = "eth1"
 
-        self.bundle.try_update_default(routes)
+        self.bundle._try_update_default(routes)
         mock_update_default.assert_called_once_with(self.bundle.interfaces[0])
 
     @patch.object(IPRoute, "update_default")
@@ -358,7 +359,7 @@ class TestIPRouteClass(unittest.TestCase):
         routes["default"] = "eth0"
         routes["secondary"] = "eth1"
 
-        self.bundle.try_update_default(routes)
+        self.bundle._try_update_default(routes)
         self.assertTrue(not mock_update_default.called)
 
     @patch.object(IPRoute, "update_default")
@@ -399,7 +400,7 @@ class TestIPRouteClass(unittest.TestCase):
         routes["secondary"] = "wwan0"
 
         # act
-        self.bundle.try_update_default(routes)
+        self.bundle._try_update_default(routes)
 
         # assert
         mock_update_default.assert_called_once_with(self.bundle.interfaces[2])
@@ -419,7 +420,7 @@ class TestIPRouteClass(unittest.TestCase):
         routes["default"] = "wwan0"
         routes["secondary"] = "eth0"
 
-        self.bundle.try_update_default(routes)
+        self.bundle._try_update_default(routes)
         mock_update_default.assert_called_once_with({})
 
     @patch.object(IPRoute, 'update_default')
@@ -551,7 +552,7 @@ class TestIPRouteClass(unittest.TestCase):
         }
 
         # act
-        with self.assertRaises(IOError):
+        with self.assertRaises(IPRouteError):
             self.bundle.set_default(default)
 
         # assert
