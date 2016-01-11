@@ -20,6 +20,10 @@ _logger = logging.getLogger("sanji.route")
 _update_default_lock = Lock()
 
 
+class IPRouteError(Exception):
+    pass
+
+
 class IPRoute(Sanji):
     """
     A model to handle IP Route configuration.
@@ -52,8 +56,8 @@ class IPRoute(Sanji):
             sleep(self.update_interval)
             try:
                 self.try_update_default(self.model.db)
-            except:
-                pass
+            except Exception as e:
+                _logger.debug(e)
 
     def load(self, path):
         """
@@ -201,15 +205,15 @@ class IPRoute(Sanji):
                 break
 
         current = self.get_default()
-        try:
-            if current != default:
-                self.update_default(default)
-        except Exception as e:
-            _logger.debug(e)
+        if current != default:
+            self.update_default(default)
 
     def try_update_default(self, routes):
         with _update_default_lock:
-            self._try_update_default(routes)
+            try:
+                self._try_update_default(routes)
+            except Exception as e:
+                _logger.debug(e)
 
     def update_router(self, interface):
         """
@@ -236,10 +240,7 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        try:
-            self.try_update_default(self.model.db)
-        except:
-            pass
+        self.try_update_default(self.model.db)
 
     def set_default(self, default, is_default=True):
         """
@@ -269,7 +270,7 @@ class IPRoute(Sanji):
                 _logger.info("Failed to recover the default gateway.")
             error = "Update default gateway failed: %s" % e
             _logger.error(error)
-            raise IOError(error)
+            raise IPRouteError(error)
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
