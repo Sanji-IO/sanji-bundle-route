@@ -98,7 +98,11 @@ class IPRoute(Sanji):
             except:
                 continue
             if 1 == iface_info["link"]:
-                data.append(iface)
+                inet_ip = [inet["ip"]
+                           for inet in iface_info["inet"]
+                           if "" != inet["ip"]]
+                if len(inet_ip):
+                    data.append(iface)
         return data
 
     def get_default(self):
