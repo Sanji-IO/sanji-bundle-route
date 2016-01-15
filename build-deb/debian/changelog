@@ -1,3 +1,9 @@
+sanji-bundle-route (0.10.4-1) unstable; urgency=low
+
+  * Update policy for checking link status.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 14 Jan 2016 14:11:24 +0800
+
 sanji-bundle-route (0.10.3-1) unstable; urgency=low
 
   * Bugfix: wait until timeout when update interface of DNS
