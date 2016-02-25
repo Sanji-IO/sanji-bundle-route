@@ -40,7 +40,7 @@ def interfaces():
         ifaces = [x for x in ifaces if not
                   (x.startswith("lo") or x.startswith("mon."))]
         return ifaces
-    except Exception, e:
+    except Exception as e:
         _logger.info("Cannot get interfaces: %s" % e)
         raise e
 
@@ -109,22 +109,34 @@ def ifupdown(iface, up):
         ValueError
     """
     if not up:
-        try:
-            output = sh.awk(
-                sh.grep(
-                    sh.grep(sh.ps("ax"), iface, _timeout=5),
-                    "dhclient", _timeout=5),
-                "{print $1}")
-            dhclients = output().split()
-            for dhclient in dhclients:
-                sh.kill(dhclient)
-        except:
-            pass
+        dhclient(iface, False)
     try:
         sh.ip("link", "set", iface, "up" if up else "down")
     except:
         raise ValueError("Cannot update the link status for \"%s\"."
                          % iface)
+
+
+def dhclient(iface, enable, script=None):
+    # Disable the dhcp client and flush interface
+    try:
+        dhclients = sh.awk(
+            sh.grep(
+                sh.grep(sh.ps("ax"), iface, _timeout=5),
+                "dhclient", _timeout=5),
+            "{print $1}")
+        dhclients = dhclients.split()
+        for dhclient in dhclients:
+            sh.kill(dhclient)
+    except Exception as e:
+        _logger.info("Failed to stop dhclient: %s" % e)
+        pass
+
+    if enable:
+        if script:
+            sh.dhclient("-nw", "-sf", script, iface, _bg=True)
+        else:
+            sh.dhclient("-nw", iface, _bg=True)
 
 
 def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
@@ -150,20 +162,7 @@ def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
         raise ValueError("Unknown error for \"%s\"." % iface)
 
     # Disable the dhcp client and flush interface
-    try:
-        dhclients = sh.awk(
-            sh.grep(
-                sh.grep(sh.ps("ax"), iface, _timeout=5),
-                "dhclient", _timeout=5),
-            "{print $1}")
-        dhclients = dhclients.split()
-        if 1 == len(dhclients):
-            sh.dhclient("-x", iface)
-        elif len(dhclients) > 1:
-            for dhclient in dhclients:
-                sh.kill(dhclient)
-    except:
-        pass
+    dhclient(iface, False)
 
     try:
         sh.ip("-4", "addr", "flush", "label", iface)
@@ -171,10 +170,7 @@ def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
         raise ValueError("Unknown error for \"%s\"." % iface)
 
     if dhcpc:
-        if script:
-            sh.dhclient("-sf", script, iface)
-        else:
-            sh.dhclient(iface)
+        dhclient(iface, True, script)
     else:
         if ip:
             net = ipcalc.Network("%s/%s" % (ip, netmask))
