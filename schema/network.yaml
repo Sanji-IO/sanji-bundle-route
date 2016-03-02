@@ -1,0 +1,113 @@
+swagger: '2.0'
+info:
+  title: Network Interface API
+  description: Handle the network interfaces
+  version: "0.1.1"
+
+schemes:
+  - http
+  - https
+produces:
+  - application/json
+paths:
+  /network/interfaces/{name}:
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+    put:
+      summary: Update Interface Information
+      description: Update the specified interface.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Interface'
+          examples:
+            {
+              "application/json": {
+                $ref: '#/externalDocs/x-mocks/Interface'
+              }
+            }
+
+  /network/wan:
+    put:
+      summary: Update WAN
+      description: Update WAN interface
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/WAN'
+          examples:
+            {
+              "application/json": {
+                $ref: '#/externalDocs/x-mocks/WAN'
+              }
+            }
+definitions:
+  Interface:
+    title: Interface
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        readOnly: true
+        description: Indicate the interface name.
+      ip:
+        type: string
+        pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        description: IP address for the Ethernet interface.
+      netmask:
+        type: string
+        pattern: ^(254|252|248|240|224|192|128)\.0\.0\.0|255\.(254|252|248|240|224|192|128|0)\.0\.0|255\.255\.(254|252|248|240|224|192|128|0)\.0|255\.255\.255\.(254|252|248|240|224|192|128|0)
+        description: Subnet mask for the Ethernet interface.
+      subnet:
+        type: string
+        pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        description: |
+          A subnet (short for "subnetwork") is an identifiably separate part of
+          an organization's network.
+      gateway:
+        type: string
+        pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        description: |
+          Gateway is a router or a proxy server that routes between networks.
+      dns:
+        type: array
+        items:
+          type: string
+          pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        description: |
+          The Domain Name System (DNS) is a hierarchical distributed naming
+          system for computers, services, or any resource connected to the
+          Internet or a private network.
+    example:
+          $ref: '#/externalDocs/x-mocks/Interface'
+  WAN:
+    title: WAN
+    required:
+      - interface
+    properties:
+      interface:
+        type: string
+        readOnly: true
+        description: Indicate the interface name.
+        
+externalDocs:
+  url: '#'
+  x-mocks:
+    Interface:
+      {
+        "name": "eth0",
+        "ip": "192.168.3.127",
+        "netmask": "255.255.255.0",
+        "subnet": "192.168.3.0",
+        "gateway": "192.168.3.254"
+      }
+    WAN:
+      {
+        "interface": "eth0"
+      }

@@ -1,0 +1,93 @@
+swagger: '2.0'
+info:
+  title: IP Route API
+  description: Handle the routing table
+  version: "0.11.1"
+
+schemes:
+  - http
+  - https
+produces:
+  - application/json
+paths:
+  /network/routes/default:
+    get:
+      summary: Current Default Route
+      description: |
+        The system returns the current default route information.
+      responses:
+        200:
+          description: Default Route
+          schema:
+            $ref: '#/definitions/DefaultRoute'
+          examples:
+            {
+              "application/json": {
+                $ref: '#/externalDocs/x-mocks/DefaultRoute'
+              }
+            }
+
+  /network/default-route:
+    get:
+      summary: Default Route Setting
+      description: A interface list for default route priority.
+      responses:
+        200:
+          description: Default route list
+          schema:
+            type: array
+            items: 
+              description: Ordered default route list
+              type: string
+          examples:
+            {
+              "application/json": {
+                $ref: '#/externalDocs/x-mocks/DefaultRouteList'
+              }
+            }
+    put:
+      summary: Update Default Route Setting
+      description: Update the default route list.
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items: 
+              description: Ordered default route list
+              type: string
+          examples:
+            {
+              "application/json": {
+                $ref: '#/externalDocs/x-mocks/DefaultRouteList'
+              }
+            }
+
+definitions:
+  DefaultRoute:
+    title: DefaultRoute
+    required:
+      - interface
+    properties:
+      interface:
+        type: string
+        readOnly: true
+        description: Indicate the interface name.
+      gateway:
+        type: string
+        pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        description: |
+          Gateway is a router or a proxy server that routes between networks.
+    example:
+          $ref: '#/externalDocs/x-mocks/DefaultRoute'
+
+externalDocs:
+  url: '#'
+  x-mocks:
+    DefaultRoute:
+      {
+        "interface": "eth0",
+        "gateway": "192.168.3.254"
+      }
+    DefaultRouteList:
+      ["wwan0", "eth0"]
