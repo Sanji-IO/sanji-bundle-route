@@ -11,7 +11,7 @@ from sanji.core import Route
 from sanji.connection.mqtt import Mqtt
 from sanji.model_initiator import ModelInitiator
 from voluptuous import Schema
-from voluptuous import Any
+from voluptuous import Any, Required, Length, REMOVE_EXTRA
 
 import ip
 
@@ -267,20 +267,19 @@ class IPRoute(Sanji):
     @Route(methods="get", resource="/network/routes/default")
     def _get_default(self, message, response):
         """
-        Get default gateway.
+        Get default gateway and priority list.
         """
-        return response(data=self.get_default())
+        data = self.get_default()
+        if data is None:
+            data = {}
+        data["priorityList"] = self.get_default_routes()
+        return response(data=data)
 
-    @Route(methods="get", resource="/network/default-route")
-    def _get_default_routes(self, message, response):
-        """
-        Get default gateway list.
-        """
-        return response(data=self.get_default_routes())
+    put_default_schema = Schema({
+        Required("priorityList"): [Any(str, unicode, Length(1, 255))]
+    }, extra=REMOVE_EXTRA)
 
-    put_default_schema = Schema([Any(str, unicode)])
-
-    @Route(methods="put", resource="/network/default-route")
+    @Route(methods="put", resource="/network/routes/default")
     def _put_default_routes(self, message, response,
                             schema=put_default_schema):
         """
@@ -288,7 +287,7 @@ class IPRoute(Sanji):
         empty.
         """
         try:
-            self.set_default_routes(message.data)
+            self.set_default_routes(message.data["priorityList"])
         except Exception as e:
             return response(code=404,
                             data={"message": e})

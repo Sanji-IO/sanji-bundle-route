@@ -2,19 +2,20 @@ swagger: '2.0'
 info:
   title: IP Route API
   description: Handle the routing table
-  version: "0.11.1"
+  version: "1.0.0"
 
 schemes:
-  - http
-  - https
+- http
+- https
 produces:
-  - application/json
+- application/json
 paths:
   /network/routes/default:
     get:
-      summary: Current Default Route
+      summary: Current Default Route and priority list
       description: |
-        The system returns the current default route information.
+        The system returns the current default route information and default
+        route priority list.
       responses:
         200:
           description: Default Route
@@ -26,25 +27,6 @@ paths:
                 $ref: '#/externalDocs/x-mocks/DefaultRoute'
               }
             }
-
-  /network/default-route:
-    get:
-      summary: Default Route Setting
-      description: A interface list for default route priority.
-      responses:
-        200:
-          description: Default route list
-          schema:
-            type: array
-            items: 
-              description: Ordered default route list
-              type: string
-          examples:
-            {
-              "application/json": {
-                $ref: '#/externalDocs/x-mocks/DefaultRouteList'
-              }
-            }
     put:
       summary: Update Default Route Setting
       description: Update the default route list.
@@ -52,14 +34,11 @@ paths:
         200:
           description: OK
           schema:
-            type: array
-            items: 
-              description: Ordered default route list
-              type: string
+            $ref: '#/definitions/DefaultRoute'
           examples:
             {
               "application/json": {
-                $ref: '#/externalDocs/x-mocks/DefaultRouteList'
+                $ref: '#/externalDocs/x-mocks/DefaultRoute_Put'
               }
             }
 
@@ -67,7 +46,7 @@ definitions:
   DefaultRoute:
     title: DefaultRoute
     required:
-      - interface
+    - interface
     properties:
       interface:
         type: string
@@ -76,8 +55,17 @@ definitions:
       gateway:
         type: string
         pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+        readOnly: true
         description: |
           Gateway is a router or a proxy server that routes between networks.
+      priorityList:
+        type: array
+        items:
+          description: interface for default route
+          type: string
+          pattern: '[A-Za-z0-9_-]+'
+          minLength: 2
+          maxLength: 255
     example:
           $ref: '#/externalDocs/x-mocks/DefaultRoute'
 
@@ -87,7 +75,10 @@ externalDocs:
     DefaultRoute:
       {
         "interface": "eth0",
-        "gateway": "192.168.3.254"
+        "gateway": "192.168.3.254",
+        "priorityList": ["wwan0", "eth0"]
       }
-    DefaultRouteList:
-      ["wwan0", "eth0"]
+    DefaultRoute_Put:
+      {
+        "priorityList": ["wwan0", "eth0"]
+      }
