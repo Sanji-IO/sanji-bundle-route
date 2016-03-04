@@ -17,11 +17,17 @@ paths:
         type: string
         required: true
     put:
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Interface'
       summary: Update Interface Information
       description: Update the specified interface.
       responses:
         200:
-          description: OK
+          description: This is an event put, no response required.
           schema:
             $ref: '#/definitions/Interface'
           examples:
@@ -33,11 +39,17 @@ paths:
 
   /network/wan:
     put:
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/WAN'
       summary: Update WAN
       description: Update WAN interface
       responses:
         200:
-          description: OK
+          description: This is an event put, no response required.
           schema:
             $ref: '#/definitions/WAN'
           examples:

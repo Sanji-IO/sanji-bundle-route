@@ -28,6 +28,12 @@ paths:
               }
             }
     put:
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/DefaultRoute'
       summary: Update Default Route Setting
       description: Update the default route list.
       responses:
