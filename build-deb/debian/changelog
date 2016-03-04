@@ -1,3 +1,9 @@
+sanji-bundle-route (1.0.0-1) unstable; urgency=low
+
+  * Update API schema.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Wed, 02 Mar 2016 15:36:09 +0800
+
 sanji-bundle-route (0.10.5-1) unstable; urgency=low
 
   * Change dhcp client setting to non-blocking mode.
