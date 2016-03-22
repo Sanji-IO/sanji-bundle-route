@@ -1,0 +1,29 @@
+sanji-bundle-route (0.9.6-1) unstable; urgency=low
+
+  * Add timeout to `grep` for preventing input without EOF.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 05 Nov 2015 11:22:22 +0800
+
+sanji-bundle-route (0.9.5-1) unstable; urgency=low
+
+  * Bugfix: default gateway cannot be updated at some scenario.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 23 Oct 2015 10:20:25 +0800
+
+sanji-bundle-route (0.9.4-2) unstable; urgency=low
+
+  * Update building policy for debian package.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 12 Jun 2015 16:57:12 +0800
+
+sanji-bundle-route (0.9.4-1) unstable; urgency=low
+
+  * Use netifaces to speedup query time.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 05 Jun 2015 18:32:58 +0800
+
+sanji-bundle-route (0.9.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Fri, 05 Jun 2015 18:27:19 +0800
