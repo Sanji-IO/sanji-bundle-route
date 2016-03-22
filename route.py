@@ -4,6 +4,7 @@
 import os
 import netifaces
 import logging
+from threading import Lock
 from time import sleep
 from sanji.core import Sanji
 from sanji.core import Route
@@ -16,6 +17,11 @@ import ip
 
 
 _logger = logging.getLogger("sanji.route")
+_update_default_lock = Lock()
+
+
+class IPRouteError(Exception):
+    pass
 
 
 class IPRoute(Sanji):
@@ -47,11 +53,11 @@ class IPRoute(Sanji):
 
     def run(self):
         while True:
+            sleep(self.update_interval)
             try:
                 self.try_update_default(self.model.db)
-            except:
-                pass
-            sleep(self.update_interval)
+            except Exception as e:
+                _logger.debug(e)
 
     def load(self, path):
         """
@@ -92,7 +98,11 @@ class IPRoute(Sanji):
             except:
                 continue
             if 1 == iface_info["link"]:
-                data.append(iface)
+                inet_ip = [inet["ip"]
+                           for inet in iface_info["inet"]
+                           if "" != inet["ip"]]
+                if len(inet_ip):
+                    data.append(iface)
         return data
 
     def get_default(self):
@@ -113,14 +123,17 @@ class IPRoute(Sanji):
         default["interface"] = gw[1]
         return default
 
-    def update_dns(self, interface):
+    def update_wan_info(self, interface):
         """
-        Update DNS according to default gateway's interface.
+        Update WAN interface to default gateway's interface.
 
         Args:
             default: interface name
         """
-        res = self.publish.put("/network/dns", data={"interface": interface})
+        self.publish.event.put("/network/wan", data={"interface": interface})
+
+        # TODO: modify DNS to listen `/network/wan` instead
+        res = self.publish.put("/network/dns", data={"source": interface})
         if res.code != 200:
             raise RuntimeWarning(res.data["message"])
 
@@ -136,34 +149,28 @@ class IPRoute(Sanji):
         # delete the default gateway
         if not default or ("interface" not in default and
                            "gateway" not in default):
-            try:
-                ip.route.delete("default")
-            except Exception as e:
-                raise e
+            ip.route.delete("default")
 
         # change the default gateway
         # FIXME: only "gateway" without interface is also available
         # FIXME: add "secondary" default route rule
         else:
-            try:
-                ip.route.delete("default")
-                if "gateway" in default and "interface" in default:
-                    ip.route.add("default", default["interface"],
-                                 default["gateway"])
-                elif "interface" in default:
-                    ip.route.add("default", default["interface"])
-                elif "gateway" in default:
-                    ip.route.add("default", "", default["gateway"])
-                else:
-                    raise ValueError("Invalid default route.")
+            ip.route.delete("default")
+            if "gateway" in default and "interface" in default:
+                ip.route.add("default", default["interface"],
+                             default["gateway"])
+            elif "interface" in default:
+                ip.route.add("default", default["interface"])
+            elif "gateway" in default:
+                ip.route.add("default", "", default["gateway"])
+            else:
+                raise IPRouteError("Invalid default route.")
 
-                # update DNS
-                if "interface" in default:
-                    self.update_dns(default["interface"])
-            except Exception as e:
-                raise e
+            # update DNS
+            if "interface" in default:
+                self.update_wan_info(default["interface"])
 
-    def try_update_default(self, routes):
+    def _try_update_default(self, routes):
         """
         Try to update the default gateway.
 
@@ -178,7 +185,7 @@ class IPRoute(Sanji):
         """
         ifaces = self.list_interfaces()
         if not ifaces:
-            raise ValueError("Interfaces should be UP.")
+            raise IPRouteError("Interfaces should be UP.")
 
         default = {}
         if routes["default"] in ifaces:
@@ -186,7 +193,8 @@ class IPRoute(Sanji):
         elif routes["secondary"] in ifaces:
             default["interface"] = routes["secondary"]
         else:
-            return self.update_default({})
+            self.update_default({})
+            return
 
         # find gateway by interface
         for iface in self.interfaces:
@@ -195,12 +203,15 @@ class IPRoute(Sanji):
                 break
 
         current = self.get_default()
-        try:
-            if current["interface"] != default["interface"] or \
-                    current["gateway"] != default["gateway"]:
-                self.update_default(default)
-        except:
+        if current != default:
             self.update_default(default)
+
+    def try_update_default(self, routes):
+        with _update_default_lock:
+            try:
+                self._try_update_default(routes)
+            except IPRouteError as e:
+                _logger.debug(e)
 
     def update_router(self, interface):
         """
@@ -227,11 +238,7 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        if iface["interface"] == self.model.db["default"]:
-            try:
-                self.try_update_default(self.model.db)
-            except:
-                pass
+        self.try_update_default(self.model.db)
 
     def set_default(self, default, is_default=True):
         """
@@ -257,11 +264,12 @@ class IPRoute(Sanji):
             # try database if failed
             try:
                 self.try_update_default(self.model.db)
-            except:
-                _logger.info("Failed to recover the default gateway.")
-            error = "Update default gateway failed: %s" % e
+            except IPRouteError as e2:
+                _logger.debug(
+                    "Failed to recover the default gateway: {}".format(e2))
+            error = "Update default gateway failed: {}".format(e)
             _logger.error(error)
-            raise IOError(error)
+            raise IPRouteError(error)
 
     @Route(methods="get", resource="/network/routes/interfaces")
     def _get_interfaces(self, message, response):
