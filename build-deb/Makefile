@@ -39,7 +39,7 @@ extract-upstream:
 	tar zxf $(UPSTREAM_ORIG_ARCHIVE)
 
 changelog:
-	dch -v $(VERSION)-$(DEBVERSION) -D $(DIST) -M -u low \
+	dch -v $(VERSION) -D $(DIST) -M -u low \
 		--release-heuristic log
 
 clean:

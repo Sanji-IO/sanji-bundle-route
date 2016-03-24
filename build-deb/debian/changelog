@@ -1,3 +1,9 @@
+sanji-bundle-route (1.0.1) unstable; urgency=low
+
+  * Remove DNS PUT.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 24 Mar 2016 17:44:02 +0800
+
 sanji-bundle-route (1.0.0-1) unstable; urgency=low
 
   * Update API schema.
