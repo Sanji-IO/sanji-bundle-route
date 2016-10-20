@@ -1,3 +1,9 @@
+sanji-bundle-route (1.0.2) unstable; urgency=low
+
+  * Update pip deps.
+
+ -- Zack YL Shih <zackyl.shih@moxa.com>  Thu, 20 Oct 2016 17:38:13 +0800
+
 sanji-bundle-route (1.0.1) unstable; urgency=low
 
   * Remove DNS PUT.
