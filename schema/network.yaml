@@ -68,6 +68,12 @@ definitions:
         type: string
         readOnly: true
         description: Indicate the interface name.
+      status:
+        type: boolean
+        description: Connection status of the interface, true for connected.
+      wan:
+        type: boolean
+        description: Indicate the interface worked as WAN or not (LAN).
       ip:
         type: string
         pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
