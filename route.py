@@ -44,7 +44,7 @@ class IPRoute(Sanji):
         if self.bundle_env == "debug":  # pragma: no cover
             path_root = "%s/tests" % path_root
 
-        self.interfaces = []
+        self.interfaces = {}
         try:
             self.load(path_root)
         except:
@@ -101,7 +101,10 @@ class IPRoute(Sanji):
                 inet_ip = [inet["ip"]
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
-                if len(inet_ip):
+                if len(inet_ip) and \
+                        (iface in self.interfaces and 
+                         self.interfaces[iface]["status"] is True and
+                         self.interfaces[iface]["wan"] is True):
                     data.append(iface)
         return data
 
@@ -119,6 +122,8 @@ class IPRoute(Sanji):
         else:
             return default
 
+        default["wan"] = True
+        default["status"] = True
         default["gateway"] = gw[0]
         default["interface"] = gw[1]
         return default
@@ -176,6 +181,8 @@ class IPRoute(Sanji):
         """
         ifaces = self.list_interfaces()
         if not ifaces:
+            # FIXME: keep or clean?
+            # self.update_default({})
             raise IPRouteError("Interfaces should be UP.")
 
         default = {}
@@ -188,10 +195,7 @@ class IPRoute(Sanji):
             return
 
         # find gateway by interface
-        for iface in self.interfaces:
-            if iface["interface"] == default["interface"]:
-                default = iface
-                break
+        default.update(self.interfaces[default["interface"]])
 
         current = self.get_default()
         if current != default:
@@ -204,7 +208,7 @@ class IPRoute(Sanji):
             except IPRouteError as e:
                 _logger.debug(e)
 
-    def update_router(self, interface):
+    def update_router(self, iface):
         """
         Save the interface name with its gateway and update the default
         gateway if needed.
@@ -215,18 +219,18 @@ class IPRoute(Sanji):
         Args:
             interface: dict format with interface "name" and/or "gateway".
         """
+        if "status" not in iface:
+            iface["status"] = True
+        if "wan" not in iface:
+            iface["wan"] = True
+
         # update the router information
-        for iface in self.interfaces:
-            if iface["interface"] == interface["name"]:
-                if "gateway" in interface:
-                    iface["gateway"] = interface["gateway"]
-                break
-        else:
-            iface = {}
-            iface["interface"] = interface["name"]
-            if "gateway" in interface:
-                iface["gateway"] = interface["gateway"]
-            self.interfaces.append(iface)
+        if iface["name"] not in self.interfaces:
+            self.interfaces[iface["name"]] = {}
+        self.interfaces[iface["name"]]["status"] = iface["status"]
+        self.interfaces[iface["name"]]["wan"] = iface["wan"]
+        if "gateway" in iface:
+            self.interfaces[iface["name"]]["gateway"] = iface["gateway"]
 
         # check if the default gateway need to be modified
         self.try_update_default(self.model.db)
