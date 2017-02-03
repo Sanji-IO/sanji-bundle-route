@@ -102,7 +102,7 @@ class IPRoute(Sanji):
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
                 if len(inet_ip) and \
-                        (iface in self.interfaces and 
+                        (iface in self.interfaces and
                          self.interfaces[iface]["status"] is True and
                          self.interfaces[iface]["wan"] is True):
                     data.append(iface)
@@ -198,7 +198,8 @@ class IPRoute(Sanji):
         default.update(self.interfaces[default["interface"]])
 
         current = self.get_default()
-        if current != default:
+        if current.get("interface", "") != default.get("interface", "") or \
+                current.get("gateway", "") != default.get("gateway", ""):
             self.update_default(default)
 
     def try_update_default(self, routes):
