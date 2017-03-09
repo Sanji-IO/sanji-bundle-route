@@ -30,7 +30,7 @@ dirpath = os.path.dirname(os.path.realpath(__file__))
 def mock_ip_addr_ifaddresses(iface):
     if "eth0" == iface:
         return {"mac": "78:ac:c0:c1:a8:fe",
-                "link": 1,
+                "link": True,
                 "inet": [{
                     "broadcast": "192.168.31.255",
                     "ip": "192.168.31.36",
@@ -38,7 +38,7 @@ def mock_ip_addr_ifaddresses(iface):
                     "subnet": "192.168.31.0"}]}
     elif "eth1" == iface:
         return {"mac": "78:ac:c0:c1:a8:ff",
-                "link": 0,
+                "link": False,
                 "inet": [{
                     "broadcast": "192.168.41.255",
                     "ip": "192.168.41.37",
@@ -46,7 +46,7 @@ def mock_ip_addr_ifaddresses(iface):
                     "subnet": "192.168.41.0"}]}
     elif "ppp0" == iface:
         return {"mac": "",
-                "link": 1,
+                "link": True,
                 "inet": [{
                     "broadcast": "192.168.41.255",
                     "ip": "192.168.41.37",
@@ -149,7 +149,7 @@ class TestIPRouteClass(unittest.TestCase):
         def mock_ip_addr_ifaddresses_ppp0_failed(iface):
             if "eth0" == iface:
                 return {"mac": "78:ac:c0:c1:a8:fe",
-                        "link": 1,
+                        "link": True,
                         "inet": [{
                             "broadcast": "192.168.31.255",
                             "ip": "192.168.31.36",
@@ -157,7 +157,7 @@ class TestIPRouteClass(unittest.TestCase):
                             "subnet": "192.168.31.0"}]}
             elif "eth1" == iface:
                 return {"mac": "78:ac:c0:c1:a8:ff",
-                        "link": 0,
+                        "link": False,
                         "inet": [{
                             "broadcast": "192.168.41.255",
                             "ip": "192.168.41.37",
