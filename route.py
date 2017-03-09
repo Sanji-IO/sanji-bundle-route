@@ -97,7 +97,7 @@ class IPRoute(Sanji):
                 iface_info = ip.addr.ifaddresses(iface)
             except:
                 continue
-            if 1 == iface_info["link"]:
+            if iface_info["link"] is True:
                 inet_ip = [inet["ip"]
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]

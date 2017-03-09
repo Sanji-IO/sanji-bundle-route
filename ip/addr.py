@@ -76,12 +76,12 @@ def ifaddresses(iface):
     try:
         info["link"] = open("/sys/class/net/%s/operstate" % iface).read()
         if "down" == info["link"][:-1]:
-            info["link"] = 0
+            info["link"] = False
         else:
             info["link"] = open("/sys/class/net/%s/carrier" % iface).read()
-            info["link"] = int(info["link"][:-1])  # convert to int
+            info["link"] = True if int(info["link"][:-1]) == 1 else False
     except:
-        info["link"] = 0
+        info["link"] = False
 
     info["inet"] = []
     if netifaces.AF_INET not in full:
@@ -118,25 +118,21 @@ def ifupdown(iface, up):
 
 
 def dhclient(iface, enable, script=None):
-    # Disable the dhcp client and flush interface
+    # Enable/0Disable the dhcp client and flush interface
+    # dhclient -pf /var/run/dhclient-<iface>.pid <iface>
+    # dhclient -r -pf /var/run/dhclient-<iface>.pid <iface>
+    pid_file = "/var/run/dhclient-{}.pid".format(iface)
     try:
-        dhclients = sh.awk(
-            sh.grep(
-                sh.grep(sh.ps("ax"), iface, _timeout=5),
-                "dhclient", _timeout=5),
-            "{print $1}")
-        dhclients = dhclients.split()
-        for dhclient in dhclients:
-            sh.kill(dhclient)
+        sh.dhclient("-r", "-pf", pid_file, iface)
     except Exception as e:
         _logger.info("Failed to stop dhclient: %s" % e)
         pass
 
     if enable:
         if script:
-            sh.dhclient("-nw", "-sf", script, iface, _bg=True)
+            sh.dhclient("-pf", pid_file, "-nw", "-sf", script, iface)
         else:
-            sh.dhclient("-nw", iface, _bg=True)
+            sh.dhclient("-pf", pid_file, "-nw", iface)
 
 
 def ifconfig(iface, dhcpc, ip="", netmask="24", gateway="", script=None):
@@ -182,6 +178,7 @@ if __name__ == "__main__":
     print interfaces()
 
     # ifconfig("eth0", True)
+    # dhclient("eth0", False)
     # time.sleep(10)
     # ifconfig("eth1", False, "192.168.31.36")
     eth0 = ifaddresses("eth0")
