@@ -1,3 +1,9 @@
+sanji-bundle-route (1.1.0) unstable; urgency=low
+
+  * feat: Get interface via shell script command.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 30 Mar 2017 19:18:05 +0800
+
 sanji-bundle-route (1.0.3) unstable; urgency=low
 
   * fix: Add "-pf" for `dhclient`.

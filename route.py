@@ -12,6 +12,8 @@ from sanji.connection.mqtt import Mqtt
 from sanji.model_initiator import ModelInitiator
 from voluptuous import Schema
 from voluptuous import Any, Required, Length, REMOVE_EXTRA
+import re
+import sh
 
 import ip
 
@@ -40,22 +42,42 @@ class IPRoute(Sanji):
         except KeyError:
             self.bundle_env = os.getenv("BUNDLE_ENV", "debug")
 
-        path_root = os.path.abspath(os.path.dirname(__file__))
+        self._path_root = os.path.abspath(os.path.dirname(__file__))
         if self.bundle_env == "debug":  # pragma: no cover
-            path_root = "%s/tests" % path_root
+            self._path_root = "%s/tests" % self._path_root
 
         self.interfaces = []
         try:
-            self.load(path_root)
+            self.load(self._path_root)
         except:
             self.stop()
             raise IOError("Cannot load any configuration.")
+
+        # find correct interface if shell command is required
+        self._cmd_regex = re.compile(r"\$\(([\S\s]+)\)")
+        self._routes = self._get_routes()
+
+    def _get_routes(self):
+        routes = []
+        for iface in self.model.db:
+            match = self._cmd_regex.match(iface)
+            if not match:
+                routes.append(iface)
+                continue
+            try:
+                with open("{}/iface_cmd.sh".format(self._path_root), "w") as f:
+                    f.write(match.group(1))
+                _iface = sh.sh("{}/iface_cmd.sh".format(self._path_root))
+                routes.append(str(_iface).rstrip())
+            except Exception as e:
+                _logger.debug(e)
+        return routes
 
     def run(self):
         while True:
             sleep(self.update_interval)
             try:
-                self.try_update_default(self.model.db)
+                self.try_update_default(self._routes)
             except Exception as e:
                 _logger.debug(e)
 
@@ -229,13 +251,13 @@ class IPRoute(Sanji):
             self.interfaces.append(iface)
 
         # check if the default gateway need to be modified
-        self.try_update_default(self.model.db)
+        self.try_update_default(self._routes)
 
     def get_default_routes(self):
         """
         Get default gateway list.
         """
-        return self.model.db
+        return self._routes
 
     def set_default_routes(self, defaults):
         """
@@ -245,13 +267,14 @@ class IPRoute(Sanji):
         # if no interface but has gateway, do not update anything
         self.model.db = defaults
         self.save()
+        self._routes = self._get_routes()
 
         try:
             self.update_default(defaults)
         except Exception as e:
             # try database if failed
             try:
-                self.try_update_default(self.model.db)
+                self.try_update_default(self._routes)
             except IPRouteError as e2:
                 _logger.debug(
                     "Failed to recover the default gateway: {}".format(e2))
@@ -286,7 +309,10 @@ class IPRoute(Sanji):
         except Exception as e:
             return response(code=404,
                             data={"message": e})
-        return response(data=self.get_default())
+
+        data = {}
+        data["priorityList"] = self.get_default_routes()
+        return response(data=data)
 
     def set_router_db(self, message, response):
         """
