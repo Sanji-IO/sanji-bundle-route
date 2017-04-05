@@ -1,3 +1,9 @@
+sanji-bundle-route (1.2.0) unstable; urgency=low
+
+  * feat: Support `status` and `wan`.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Wed, 05 Apr 2017 16:00:35 +0800
+
 sanji-bundle-route (1.1.0) unstable; urgency=low
 
   * feat: Get interface via shell script command.
