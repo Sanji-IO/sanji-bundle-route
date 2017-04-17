@@ -1,9 +1,9 @@
 {
   "name": "route",
-  "version": "0.10.5",
+  "version": "1.2.0",
   "author": "Aeluin Chen",
   "email": "aeluin.chen@moxa.com",
-  "description": "Handle the routing table",
+  "description": "Handles the routing table",
   "license": "MOXA",
   "main": "route.py",
   "argument": "",
@@ -17,19 +17,7 @@
   "resources": [
     {
       "role": "view",
-      "resource": "/network/interface"
-    },
-    {
-      "role": "view",
-      "resource": "/network/dns"
-    },
-    {
-      "methods": ["get"],
-      "resource": "/network/routes/interfaces"
-    },
-    {
-      "methods": ["get","put"],
-      "resource": "/network/routes/db"
+      "resource": "/network/interfaces/:name"
     },
     {
       "methods": ["get","put"],

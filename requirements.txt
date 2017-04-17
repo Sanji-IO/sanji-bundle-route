@@ -1,4 +1,4 @@
-paho-mqtt==1.1
+paho-mqtt>=1.1
 sh
 ipcalc
 netifaces

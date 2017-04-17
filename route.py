@@ -11,7 +11,9 @@ from sanji.core import Route
 from sanji.connection.mqtt import Mqtt
 from sanji.model_initiator import ModelInitiator
 from voluptuous import Schema
-from voluptuous import Any, Extra, Optional
+from voluptuous import Any, Required, Length, REMOVE_EXTRA
+import re
+import sh
 
 import ip
 
@@ -40,22 +42,42 @@ class IPRoute(Sanji):
         except KeyError:
             self.bundle_env = os.getenv("BUNDLE_ENV", "debug")
 
-        path_root = os.path.abspath(os.path.dirname(__file__))
+        self._path_root = os.path.abspath(os.path.dirname(__file__))
         if self.bundle_env == "debug":  # pragma: no cover
-            path_root = "%s/tests" % path_root
+            self._path_root = "%s/tests" % self._path_root
 
-        self.interfaces = []
+        self.interfaces = {}
         try:
-            self.load(path_root)
+            self.load(self._path_root)
         except:
             self.stop()
             raise IOError("Cannot load any configuration.")
+
+        # find correct interface if shell command is required
+        self._cmd_regex = re.compile(r"\$\(([\S\s]+)\)")
+        self._routes = self._get_routes()
+
+    def _get_routes(self):
+        routes = []
+        for iface in self.model.db:
+            match = self._cmd_regex.match(iface)
+            if not match:
+                routes.append(iface)
+                continue
+            try:
+                with open("{}/iface_cmd.sh".format(self._path_root), "w") as f:
+                    f.write(match.group(1))
+                _iface = sh.sh("{}/iface_cmd.sh".format(self._path_root))
+                routes.append(str(_iface).rstrip())
+            except Exception as e:
+                _logger.debug(e)
+        return routes
 
     def run(self):
         while True:
             sleep(self.update_interval)
             try:
-                self.try_update_default(self.model.db)
+                self.try_update_default(self._routes)
             except Exception as e:
                 _logger.debug(e)
 
@@ -97,11 +119,14 @@ class IPRoute(Sanji):
                 iface_info = ip.addr.ifaddresses(iface)
             except:
                 continue
-            if 1 == iface_info["link"]:
+            if iface_info["link"] is True:
                 inet_ip = [inet["ip"]
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
-                if len(inet_ip):
+                if len(inet_ip) and \
+                        (iface in self.interfaces and
+                         self.interfaces[iface]["status"] is True and
+                         self.interfaces[iface]["wan"] is True):
                     data.append(iface)
         return data
 
@@ -119,6 +144,8 @@ class IPRoute(Sanji):
         else:
             return default
 
+        default["wan"] = True
+        default["status"] = True
         default["gateway"] = gw[0]
         default["interface"] = gw[1]
         return default
@@ -131,11 +158,6 @@ class IPRoute(Sanji):
             default: interface name
         """
         self.publish.event.put("/network/wan", data={"interface": interface})
-
-        # TODO: modify DNS to listen `/network/wan` instead
-        res = self.publish.put("/network/dns", data={"source": interface})
-        if res.code != 200:
-            raise RuntimeWarning(res.data["message"])
 
     def update_default(self, default):
         """
@@ -175,35 +197,31 @@ class IPRoute(Sanji):
         Try to update the default gateway.
 
         Args:
-            routes: dict format including default gateway interface and
-                    secondary default gateway interface.
+            routes: array format of default gateway list with priority.
                     For example:
-                    {
-                        "default": "wwan0",
-                        "secondary": "eth0"
-                    }
+                    ["wwan0", "eth0"]
         """
         ifaces = self.list_interfaces()
         if not ifaces:
+            # FIXME: keep or clean?
+            # self.update_default({})
             raise IPRouteError("Interfaces should be UP.")
 
         default = {}
-        if routes["default"] in ifaces:
-            default["interface"] = routes["default"]
-        elif routes["secondary"] in ifaces:
-            default["interface"] = routes["secondary"]
+        for iface in routes:
+            if iface in ifaces:
+                default["interface"] = iface
+                break
         else:
             self.update_default({})
             return
 
         # find gateway by interface
-        for iface in self.interfaces:
-            if iface["interface"] == default["interface"]:
-                default = iface
-                break
+        default.update(self.interfaces[default["interface"]])
 
         current = self.get_default()
-        if current != default:
+        if current.get("interface", "") != default.get("interface", "") or \
+                current.get("gateway", "") != default.get("gateway", ""):
             self.update_default(default)
 
     def try_update_default(self, routes):
@@ -213,7 +231,7 @@ class IPRoute(Sanji):
             except IPRouteError as e:
                 _logger.debug(e)
 
-    def update_router(self, interface):
+    def update_router(self, iface):
         """
         Save the interface name with its gateway and update the default
         gateway if needed.
@@ -224,46 +242,44 @@ class IPRoute(Sanji):
         Args:
             interface: dict format with interface "name" and/or "gateway".
         """
+        if "status" not in iface:
+            iface["status"] = True
+        if "wan" not in iface:
+            iface["wan"] = True
+
         # update the router information
-        for iface in self.interfaces:
-            if iface["interface"] == interface["name"]:
-                if "gateway" in interface:
-                    iface["gateway"] = interface["gateway"]
-                break
-        else:
-            iface = {}
-            iface["interface"] = interface["name"]
-            if "gateway" in interface:
-                iface["gateway"] = interface["gateway"]
-            self.interfaces.append(iface)
+        if iface["name"] not in self.interfaces:
+            self.interfaces[iface["name"]] = {}
+        self.interfaces[iface["name"]]["status"] = iface["status"]
+        self.interfaces[iface["name"]]["wan"] = iface["wan"]
+        if "gateway" in iface:
+            self.interfaces[iface["name"]]["gateway"] = iface["gateway"]
 
         # check if the default gateway need to be modified
-        self.try_update_default(self.model.db)
+        self.try_update_default(self._routes)
 
-    def set_default(self, default, is_default=True):
+    def get_default_routes(self):
         """
-        Update default / secondary gateway.
+        Get default gateway list.
         """
-        if is_default:
-            def_type = "default"
-        else:
-            def_type = "secondary"
+        return self._routes
 
+    def set_default_routes(self, defaults):
+        """
+        Update default gateway list.
+        """
         # save the setting
         # if no interface but has gateway, do not update anything
-        if "interface" in default:
-            self.model.db[def_type] = default["interface"]
-        elif "gateway" not in default:
-            self.model.db[def_type] = ""
+        self.model.db = defaults
         self.save()
+        self._routes = self._get_routes()
 
         try:
-            if is_default:
-                self.update_default(default)
+            self.update_default(defaults)
         except Exception as e:
             # try database if failed
             try:
-                self.try_update_default(self.model.db)
+                self.try_update_default(self._routes)
             except IPRouteError as e2:
                 _logger.debug(
                     "Failed to recover the default gateway: {}".format(e2))
@@ -271,49 +287,37 @@ class IPRoute(Sanji):
             _logger.error(error)
             raise IPRouteError(error)
 
-    @Route(methods="get", resource="/network/routes/interfaces")
-    def _get_interfaces(self, message, response):
-        """
-        Get available interfaces.
-        """
-        return response(data=self.list_interfaces())
-
     @Route(methods="get", resource="/network/routes/default")
     def _get_default(self, message, response):
         """
-        Get default gateway.
+        Get default gateway and priority list.
         """
-        return response(data=self.get_default())
+        data = self.get_default()
+        if data is None:
+            data = {}
+        data["priorityList"] = self.get_default_routes()
+        return response(data=data)
 
     put_default_schema = Schema({
-        Optional("interface"): Any(str, unicode),
-        Extra: object})
+        Required("priorityList"): [Any(str, unicode, Length(1, 255))]
+    }, extra=REMOVE_EXTRA)
 
     @Route(methods="put", resource="/network/routes/default")
-    def _put_default(self, message, response, schema=put_default_schema):
+    def _put_default_routes(self, message, response,
+                            schema=put_default_schema):
         """
         Update the default gateway, delete default gateway if data is None or
         empty.
         """
         try:
-            self.set_default(message.data)
+            self.set_default_routes(message.data["priorityList"])
         except Exception as e:
             return response(code=404,
                             data={"message": e})
-        return response(data=self.get_default())
 
-    @Route(methods="put", resource="/network/routes/secondary")
-    def _put_secondary(self, message, response, schema=put_default_schema):
-        """
-        Update the secondary default gateway, delete default gateway if data
-        is None or empty.
-        """
-        try:
-            self.set_default(message.data, False)
-        except Exception as e:
-            return response(code=404,
-                            data={"message": e})
-        return response(data=message.data)
+        data = {}
+        data["priorityList"] = self.get_default_routes()
+        return response(data=data)
 
     def set_router_db(self, message, response):
         """
@@ -337,8 +341,9 @@ class IPRoute(Sanji):
     def _get_router_db(self, message, response):
         return response(data=self.interfaces)
 
-    @Route(methods="put", resource="/network/interface")
+    @Route(methods="put", resource="/network/interfaces/:name")
     def _event_router_db(self, message):
+        message.data["name"] = message.param["name"]
         self.update_router(message.data)
 
 

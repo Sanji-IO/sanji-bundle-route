@@ -30,7 +30,7 @@ dirpath = os.path.dirname(os.path.realpath(__file__))
 def mock_ip_addr_ifaddresses(iface):
     if "eth0" == iface:
         return {"mac": "78:ac:c0:c1:a8:fe",
-                "link": 1,
+                "link": True,
                 "inet": [{
                     "broadcast": "192.168.31.255",
                     "ip": "192.168.31.36",
@@ -38,7 +38,7 @@ def mock_ip_addr_ifaddresses(iface):
                     "subnet": "192.168.31.0"}]}
     elif "eth1" == iface:
         return {"mac": "78:ac:c0:c1:a8:ff",
-                "link": 0,
+                "link": False,
                 "inet": [{
                     "broadcast": "192.168.41.255",
                     "ip": "192.168.41.37",
@@ -46,7 +46,7 @@ def mock_ip_addr_ifaddresses(iface):
                     "subnet": "192.168.41.0"}]}
     elif "ppp0" == iface:
         return {"mac": "",
-                "link": 1,
+                "link": True,
                 "inet": [{
                     "broadcast": "192.168.41.255",
                     "ip": "192.168.41.37",
@@ -91,7 +91,7 @@ class TestIPRouteClass(unittest.TestCase):
         load: load current configuration
         """
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["default"])
+        self.assertEqual("eth0", self.bundle.model.db[0])
 
     def test__load__backup_conf(self):
         """
@@ -99,7 +99,7 @@ class TestIPRouteClass(unittest.TestCase):
         """
         os.remove("%s/data/%s.json" % (dirpath, self.name))
         self.bundle.load(dirpath)
-        self.assertEqual("eth0", self.bundle.model.db["default"])
+        self.assertEqual("eth0", self.bundle.model.db[0])
 
     def test__load__no_conf(self):
         """
@@ -123,6 +123,15 @@ class TestIPRouteClass(unittest.TestCase):
         """
         mock_interfaces.return_value = ["eth0", "eth1", "ppp0"]
         mock_ifaddresses.side_effect = mock_ip_addr_ifaddresses
+        self.bundle.interfaces = {}
+        self.bundle.interfaces["eth0"] = {
+            "status": True,
+            "wan": True
+        }
+        self.bundle.interfaces["ppp0"] = {
+            "status": True,
+            "wan": True
+        }
 
         ifaces = self.bundle.list_interfaces()
         self.assertEqual(2, len(ifaces))
@@ -149,7 +158,7 @@ class TestIPRouteClass(unittest.TestCase):
         def mock_ip_addr_ifaddresses_ppp0_failed(iface):
             if "eth0" == iface:
                 return {"mac": "78:ac:c0:c1:a8:fe",
-                        "link": 1,
+                        "link": True,
                         "inet": [{
                             "broadcast": "192.168.31.255",
                             "ip": "192.168.31.36",
@@ -157,7 +166,7 @@ class TestIPRouteClass(unittest.TestCase):
                             "subnet": "192.168.31.0"}]}
             elif "eth1" == iface:
                 return {"mac": "78:ac:c0:c1:a8:ff",
-                        "link": 0,
+                        "link": False,
                         "inet": [{
                             "broadcast": "192.168.41.255",
                             "ip": "192.168.41.37",
@@ -165,6 +174,10 @@ class TestIPRouteClass(unittest.TestCase):
                             "subnet": "192.168.41.0"}]}
             else:
                 raise ValueError
+        self.bundle.interfaces["eth0"] = {
+            "status": True,
+            "wan": True
+        }
 
         mock_interfaces.return_value = ["eth0", "eth1", "ppp0"]
         mock_ifaddresses.side_effect = mock_ip_addr_ifaddresses_ppp0_failed
@@ -309,23 +322,26 @@ class TestIPRouteClass(unittest.TestCase):
             "gateway": "192.168.4.254"
         }
 
-        self.bundle.interfaces = [
-            {
-                "interface": "eth0",
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
                 "gateway": "192.168.3.254"
             },
-            {
-                "interface": "eth1",
+            "eth1": {
+                "status": True,
+                "wan": False,
                 "gateway": "192.168.4.254"
             }
-        ]
+        }
 
-        routes = {}
-        routes["default"] = "eth0"
-        routes["secondary"] = "eth1"
+        routes = ["eth0", "eth1"]
 
         self.bundle._try_update_default(routes)
-        mock_update_default.assert_called_once_with(self.bundle.interfaces[0])
+
+        default = self.bundle.interfaces["eth0"]
+        default["interface"] = "eth0"
+        mock_update_default.assert_called_once_with(default)
 
     @patch.object(IPRoute, "update_default")
     @patch.object(IPRoute, "get_default")
@@ -344,20 +360,20 @@ class TestIPRouteClass(unittest.TestCase):
             "gateway": "192.168.3.254"
         }
 
-        self.bundle.interfaces = [
-            {
-                "interface": "eth0",
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
                 "gateway": "192.168.3.254"
             },
-            {
-                "interface": "eth1",
+            "eth1": {
+                "status": True,
+                "wan": True,
                 "gateway": "192.168.4.254"
             }
-        ]
+        }
 
-        routes = {}
-        routes["default"] = "eth0"
-        routes["secondary"] = "eth1"
+        routes = ["eth0", "eth1"]
 
         self.bundle._try_update_default(routes)
         self.assertTrue(not mock_update_default.called)
@@ -380,30 +396,33 @@ class TestIPRouteClass(unittest.TestCase):
             "gateway": "192.168.4.254"
         }
 
-        self.bundle.interfaces = [
-            {
-                "interface": "eth0",
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": False,
+                "wan": True,
                 "gateway": "192.168.3.254"
             },
-            {
-                "interface": "eth1",
+            "eth1": {
+                "status": True,
+                "wan": True,
                 "gateway": "192.168.4.254"
             },
-            {
-                "interface": "wwan0",
+            "wwan0": {
+                "status": True,
+                "wan": True,
                 "gateway": "192.168.5.254"
             }
-        ]
+        }
 
-        routes = {}
-        routes["default"] = "eth0"
-        routes["secondary"] = "wwan0"
+        routes = ["eth0", "wwan0"]
 
         # act
         self.bundle._try_update_default(routes)
 
         # assert
-        mock_update_default.assert_called_once_with(self.bundle.interfaces[2])
+        default = self.bundle.interfaces["wwan0"]
+        default["interface"] = "wwan0"
+        mock_update_default.assert_called_once_with(default)
 
     @patch.object(IPRoute, "update_default")
     @patch.object(IPRoute, "list_interfaces")
@@ -416,9 +435,7 @@ class TestIPRouteClass(unittest.TestCase):
         """
         mock_list_interfaces.return_value = ["eth1"]
 
-        routes = {}
-        routes["default"] = "wwan0"
-        routes["secondary"] = "eth0"
+        routes = ["wwan0", "eth0"]
 
         self.bundle._try_update_default(routes)
         mock_update_default.assert_called_once_with({})
@@ -430,20 +447,41 @@ class TestIPRouteClass(unittest.TestCase):
         update_router: update router info by interface
         """
         # arrange
-        self.bundle.interfaces = [
-            {"interface": "eth0", "gateway": "192.168.31.254"},
-            {"interface": "eth1", "gateway": "192.168.4.254"}]
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            },
+            "eth1": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.4.254"
+            }
+        }
         iface = {"name": "eth1", "gateway": "192.168.41.254"}
 
         # act
         self.bundle.update_router(iface)
 
         # assert
+        eth0 = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
+        eth1 = {
+            "eth1": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.41.254"
+            }
+        }
         self.assertEqual(2, len(self.bundle.interfaces))
-        self.assertIn({"interface": "eth0", "gateway": "192.168.31.254"},
-                      self.bundle.interfaces)
-        self.assertIn({"interface": "eth1", "gateway": "192.168.41.254"},
-                      self.bundle.interfaces)
+        self.assertEqual(eth0["eth0"], self.bundle.interfaces["eth0"])
+        self.assertEqual(eth1["eth1"], self.bundle.interfaces["eth1"])
 
     @patch.object(IPRoute, 'update_default')
     def test__update_router__add_interface_with_gateway(
@@ -452,19 +490,36 @@ class TestIPRouteClass(unittest.TestCase):
         update_router: add a new interface with gateway
         """
         # arrange
-        self.bundle.interfaces = [
-            {"interface": "eth0", "gateway": "192.168.31.254"}]
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
         iface = {"name": "eth1", "gateway": "192.168.41.254"}
 
         # act
         self.bundle.update_router(iface)
 
         # assert
+        eth0 = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
+        eth1 = {
+            "eth1": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.41.254"
+            }
+        }
         self.assertEqual(2, len(self.bundle.interfaces))
-        self.assertIn({"interface": "eth0", "gateway": "192.168.31.254"},
-                      self.bundle.interfaces)
-        self.assertIn({"interface": "eth1", "gateway": "192.168.41.254"},
-                      self.bundle.interfaces)
+        self.assertEqual(eth0["eth0"], self.bundle.interfaces["eth0"])
+        self.assertEqual(eth1["eth1"], self.bundle.interfaces["eth1"])
 
     @patch.object(IPRoute, 'update_default')
     def test__update_router__add_interface_without_gateway(
@@ -473,19 +528,35 @@ class TestIPRouteClass(unittest.TestCase):
         update_router: add a new interface without gateway
         """
         # arrange
-        self.bundle.interfaces = [
-            {"interface": "eth0", "gateway": "192.168.31.254"}]
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
         iface = {"name": "eth1"}
 
         # act
         self.bundle.update_router(iface)
 
         # assert
+        eth0 = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
+        eth1 = {
+            "eth1": {
+                "status": True,
+                "wan": True
+            }
+        }
         self.assertEqual(2, len(self.bundle.interfaces))
-        self.assertIn({"interface": "eth0", "gateway": "192.168.31.254"},
-                      self.bundle.interfaces)
-        self.assertIn({"interface": "eth1"},
-                      self.bundle.interfaces)
+        self.assertEqual(eth0["eth0"], self.bundle.interfaces["eth0"])
+        self.assertEqual(eth1["eth1"], self.bundle.interfaces["eth1"])
 
     @patch.object(IPRoute, "get_default")
     @patch.object(IPRoute, 'try_update_default')
@@ -499,142 +570,105 @@ class TestIPRouteClass(unittest.TestCase):
             "interface": "eth0",
             "gateway": "192.168.3.254"
         }
-        self.bundle.interfaces = [
-            {"interface": "eth0", "gateway": "192.168.3.254"},
-            {"interface": "eth1", "gateway": "192.168.4.254"}]
+        self.bundle.interfaces = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.3.254"
+            },
+            "eth1": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.4.254"
+            }
+        }
         iface = {"name": "eth0", "gateway": "192.168.31.254"}
 
         # act
         self.bundle.update_router(iface)
 
         # assert
+        eth0 = {
+            "eth0": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.31.254"
+            }
+        }
+        eth1 = {
+            "eth1": {
+                "status": True,
+                "wan": True,
+                "gateway": "192.168.4.254"
+            }
+        }
         self.assertEqual(2, len(self.bundle.interfaces))
-        self.assertIn({"interface": "eth0", "gateway": "192.168.31.254"},
-                      self.bundle.interfaces)
-        self.assertIn({"interface": "eth1", "gateway": "192.168.4.254"},
-                      self.bundle.interfaces)
+        self.assertEqual(eth0["eth0"], self.bundle.interfaces["eth0"])
+        self.assertEqual(eth1["eth1"], self.bundle.interfaces["eth1"])
         mock_try_update_default.assert_called_once_with(self.bundle.model.db)
 
     @patch.object(IPRoute, "update_default")
-    def test__set_default__default(self, mock_update_default):
+    def test__set_default_routes__default(self, mock_update_default):
         """
-        set_default: update default gateway
+        set_default_routes: update default gateway list
         """
         # arrange
-        self.bundle.model.db["default"] = "eth1"
-        default = {
-            "interface": "eth0",
-            "gateway": "192.168.3.254"
-        }
+        self.bundle.model.db = ["eth1", "wwan0"]
+        default = ["wwan0", "eth0"]
 
         # act
-        self.bundle.set_default(default)
+        self.bundle.set_default_routes(default)
 
         # assert
-        self.assertEqual(self.bundle.model.db, {"default": "eth0"})
+        self.assertEqual(self.bundle.model.db, default)
         mock_update_default.assert_called_once_with(default)
 
     @patch.object(IPRoute, "try_update_default")
     @patch.object(IPRoute, "update_default")
-    def test__set_default__update_default_failed(
+    def test__set_default_routes__update_default_failed(
             self,
             mock_update_default,
             mock_try_update_default):
         """
-        set_default: update default gateway failed
+        set_default_routes: update default gateway failed
         """
         # arrange
         mock_update_default.side_effect = IOError
-        self.bundle.model.db["default"] = "eth1"
-        default = {
-            "interface": "eth0",
-            "gateway": "192.168.3.254"
-        }
+        self.bundle.model.db = ["eth1", "wwan0"]
+        default = ["wwan0", "eth0"]
 
         # act
         with self.assertRaises(IPRouteError):
-            self.bundle.set_default(default)
+            self.bundle.set_default_routes(default)
 
         # assert
-        self.assertEqual(self.bundle.model.db, {"default": "eth0"})
+        self.assertEqual(self.bundle.model.db, default)
         mock_update_default.assert_called_once_with(default)
         mock_try_update_default.assert_called_once_with(self.bundle.model.db)
 
     @patch.object(IPRoute, "try_update_default")
     @patch.object(IPRoute, "update_default")
-    def test__set_default__update_default_and_recovery_failed(
+    def test__set_default_routes__update_default_and_recovery_failed(
             self,
             mock_update_default,
             mock_try_update_default):
         """
-        set_default: update default gateway failed and recovery failed
+        set_default_routes: update default gateway failed and recovery failed
         """
         # arrange
         mock_update_default.side_effect = IOError
         mock_try_update_default.side_effect = IOError
-        self.bundle.model.db["default"] = "eth1"
-        default = {
-            "interface": "eth0",
-            "gateway": "192.168.3.254"
-        }
+        self.bundle.model.db = ["eth1", "wwan0"]
+        default = ["wwan0", "eth0"]
 
         # act
         with self.assertRaises(IOError):
-            self.bundle.set_default(default)
+            self.bundle.set_default_routes(default)
 
         # assert
-        self.assertEqual(self.bundle.model.db, {"default": "eth0"})
+        self.assertEqual(self.bundle.model.db, default)
         mock_update_default.assert_called_once_with(default)
         mock_try_update_default.assert_called_once_with(self.bundle.model.db)
-
-    def test__set_default__secondary(self):
-        """
-        set_default: update secondary default gateway
-        """
-        # arrange
-        self.bundle.model.db["default"] = "eth1"
-        default = {
-            "interface": "eth0",
-            "gateway": "192.168.3.254"
-        }
-
-        # act
-        self.bundle.set_default(default, False)
-
-        # assert
-        self.assertEqual(self.bundle.model.db,
-                         {"default": "eth1", "secondary": "eth0"})
-
-    @patch("route.ip.route.delete")
-    def test__set_default__clear(self, mock_ip_route_del):
-        """
-        set_default: clear default gateway
-        """
-        # arrange
-        self.bundle.model.db["default"] = "eth1"
-        default = {}
-
-        # act
-        self.bundle.set_default(default)
-
-        # assert
-        self.assertEqual(self.bundle.model.db, {"default": ""})
-        mock_ip_route_del.assert_called_once_with("default")
-
-    @patch.object(IPRoute, "update_default")
-    def test__set_default__no_change(self, mock_update_default):
-        """
-        set_default: default gateway doesn't change
-        """
-        # arrange
-        self.bundle.model.db["default"] = "eth1"
-        default = {"gateway": "192.168.3.254"}
-
-        # act
-        self.bundle.set_default(default)
-
-        # assert
-        self.assertEqual(self.bundle.model.db, {"default": "eth1"})
 
     @patch.object(IPRoute, "update_default")
     def test__set_router_db__add(self, mock_update_default):
