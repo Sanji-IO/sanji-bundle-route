@@ -67,7 +67,11 @@ definitions:
       name:
         type: string
         readOnly: true
-        description: Indicate the interface name.
+        description: Indicate the interface or alias interface name.
+      actualIface:
+        type: string
+        readOnly: true
+        description: Indicate the actual interface name.
       ip:
         type: string
         pattern: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
@@ -113,7 +117,8 @@ externalDocs:
   x-mocks:
     Interface:
       {
-        "name": "eth0",
+        "name": "wwan0",
+        "actualIface": "ppp0",
         "ip": "192.168.3.127",
         "netmask": "255.255.255.0",
         "subnet": "192.168.3.0",
