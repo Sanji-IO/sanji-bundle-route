@@ -305,7 +305,13 @@ class IPRoute(Model):
         gateway when gateway attribute is empty.
 
         Args:
-            interface: dict format with interface "name" and/or "gateway".
+            iface: dict format with interface "name" and/or "gateway".
+                {
+                    "name": "wwan0",
+                    "actualIface": "ppp0",
+                    "status": True,
+                    "wan": True
+                }
         """
         iface["status"] = iface.get("status", True)
         iface["wan"] = iface.get("wan", True)
