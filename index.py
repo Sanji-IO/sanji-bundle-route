@@ -46,6 +46,7 @@ class Index(Sanji):
         if actual_iface:
             data["actualIface"] = actual_iface
         self.publish.event.put("/network/wan", data=data)
+        self.publish.put("/system/properties/route", timeout=5, data={"data": data})
 
     @Route(methods="get", resource="/network/routes/default")
     def get_default(self, message, response):
