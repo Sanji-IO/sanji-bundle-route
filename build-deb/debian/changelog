@@ -1,3 +1,9 @@
+sanji-bundle-route (1.5.0) unstable; urgency=low
+
+  * feat: support resource `network/status`.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Sat, 10 Feb 2018 20:14:55 +0800
+
 sanji-bundle-route (1.4.1) unstable; urgency=low
 
   * docs: add `actualIface`.
