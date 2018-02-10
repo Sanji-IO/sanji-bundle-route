@@ -1,3 +1,11 @@
+sanji-bundle-route (1.4.1) unstable; urgency=low
+
+  * docs: add `actualIface`.
+  * fix: Modify property name for more clear.
+  * fix: do not raise exception for empty data.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Mon, 22 Jan 2018 14:48:54 +0800
+
 sanji-bundle-route (1.4.0) unstable; urgency=low
 
   * feat: Add resource /system/properties/route.
