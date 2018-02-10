@@ -142,7 +142,7 @@ class IPRoute(Model):
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
                 if len(inet_ip) and \
-                        (iface in self._interfaces and
+                        (iface in self._interfaces.keys() and
                          self._interfaces[iface]["status"] is True and
                          self._interfaces[iface]["wan"] is True):
                     data.append(iface)
@@ -332,10 +332,9 @@ class IPRoute(Model):
         # update the router information
         if name not in self._interfaces:
             self._interfaces[name] = {}
-        self._interfaces[name]["status"] = iface["status"]
-        self._interfaces[name]["wan"] = iface["wan"]
-        if "gateway" in iface:
-            self._interfaces[name]["gateway"] = iface["gateway"]
+        iface.pop("name", None)
+        iface.pop("actualIface", None)
+        self._interfaces[name].update(iface)
         if alias:
             self._interfaces[name]["alias"] = alias
 
@@ -345,19 +344,30 @@ class IPRoute(Model):
         # check if the default gateway need to be modified
         self.try_update_default(self._routes)
 
+    def get_iface(self, iface):
+        for _iface in self._interfaces.keys():
+            item = self._interfaces[_iface]
+            alias = item.get("alias", None)
+            name = alias if alias else _iface
+            if iface != name:
+                continue
+
+            data = item.copy()
+            data.pop("alias", None)
+            if alias:
+                data["actualIface"] = _iface
+            return data
+        return {}
+
     def get_iface_db(self):
         db = {}
         for iface in self._interfaces.keys():
-            item = self._interfaces[iface]
-            if "alias" not in item:
-                db[iface] = item.copy()
-            else:
-                db[item["alias"]] = {
-                    "status": item.get("status", True),
-                    "wan": item.get("wan", True),
-                    "gateway": item.get("gateway", ""),
-                    "actualIface": iface
-                }
+            item = self._interfaces[iface].copy()
+            alias = item.pop("alias", None)
+            name = alias if alias else iface
+            db[name] = item
+            if alias:
+                db[name]["actualIface"] = iface
         return db
 
 

@@ -27,6 +27,14 @@
     {
       "methods": ["get","put"],
       "resource": "/network/routes/default"
+    },
+    {
+      "methods": ["get"],
+      "resource": "/network/status"
+    },
+    {
+      "methods": ["get"],
+      "resource": "/network/status/:iface"
     }
   ]
 }
