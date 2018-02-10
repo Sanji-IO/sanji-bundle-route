@@ -26,6 +26,21 @@ class Index(Sanji):
         Required("priorityList"): [Any(str, unicode, Length(1, 255))]
     }, extra=REMOVE_EXTRA)
 
+    EVENT_IFACE_SCHEMA = Schema({
+        Required("name"): Any(str, unicode, Length(1, 255)),
+        Optional("actualIface"): Any(str, unicode, Length(0, 255)),
+        Optional("status"): bool,
+        Optional("wan"): bool,
+        Optional("type"): Any(str, unicode),
+        Optional("mac"): Any(str, unicode, Length(0, 17)),
+        Optional("ip"): Any(str, unicode, Length(0, 255)),
+        Optional("subnet"): Any(str, unicode, Length(0, 255)),
+        Optional("netmask"): Any(str, unicode, Length(0, 255)),
+        Optional("broadcast"): Any(str, unicode, Length(0, 255)),
+        Optional("gateway"): Any(str, unicode, Length(0, 255)),
+        Optional("dns"): [Any(str, unicode, Length(0, 255))]
+    }, extra=REMOVE_EXTRA)
+
     def init(self, *args, **kwargs):
         path_root = os.path.abspath(os.path.dirname(__file__))
 
@@ -98,7 +113,17 @@ class Index(Sanji):
     @Route(methods="put", resource="/network/interfaces/:name")
     def _event_update_db(self, message):
         message.data["name"] = message.param["name"]
-        self.route.update_iface_db(message.data)
+        data = Index.EVENT_IFACE_SCHEMA(message.data)
+        self.route.update_iface_db(data)
+
+    @Route(methods="get", resource="/network/status")
+    def _get_all_iface_status(self, message, response):
+        return response(data=self.route.get_iface_db())
+
+    @Route(methods="get", resource="/network/status/:iface")
+    def _get_iface_status(self, message, response):
+        iface = message.param["iface"]
+        return response(data=self.route.get_iface(iface))
 
 
 if __name__ == "__main__":
