@@ -55,6 +55,7 @@ class IPRoute(Model):
         self._load_mappings(self._path)
         self._cmd_regex = re.compile(r"\$\(([\S\s]+)\)")
         self._routes = self._get_priority_list()
+        self._wan_event_cb = None
 
     def set_wan_event_cb(self, cb):
         self._wan_event_cb = cb
@@ -218,7 +219,8 @@ class IPRoute(Model):
             gateway = default["gateway"]
 
         if not iface and not gateway:
-            raise IPRouteError("Invalid default route.")
+            _logger.info("Delete default route.")
+            return
 
         # add the default gateway
         # FIXME: only "gateway" without interface is also available
@@ -305,7 +307,13 @@ class IPRoute(Model):
         gateway when gateway attribute is empty.
 
         Args:
-            interface: dict format with interface "name" and/or "gateway".
+            iface: dict format with interface "name" and/or "gateway".
+                {
+                    "name": "wwan0",
+                    "actualIface": "ppp0",
+                    "status": True,
+                    "wan": True
+                }
         """
         iface["status"] = iface.get("status", True)
         iface["wan"] = iface.get("wan", True)
